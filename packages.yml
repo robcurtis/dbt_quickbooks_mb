@@ -1,3 +1,5 @@
 packages:
-  - package: fivetran/quickbooks_source
-    version: [">=0.12.0", "<0.13.0"]
+  - git: "https://github.com/robcurtis/dbt_quickbooks_source_mb.git"
+    revision: main # or specific tag/commit
+    subdirectory: "." # if needed
+  
