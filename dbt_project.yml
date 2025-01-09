@@ -1,7 +1,7 @@
 config-version: 2
 name: 'quickbooks'
 
-version: '0.17.0'
+version: '0.17.1'
 
 require-dbt-version: [">=1.3.0", "<2.0.0"]
 
@@ -63,7 +63,7 @@ vars:
     using_address: true
     using_bill: true
     using_credit_memo: true
-    using_department: true
+    using_department: false
     using_deposit: true
     using_estimate: true
     using_invoice: true
