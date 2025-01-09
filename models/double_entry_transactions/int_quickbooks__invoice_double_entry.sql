@@ -175,8 +175,6 @@ final as (
         account_id,
         class_id,
         department_id,
-        created_at,
-        updated_at,
         case when invoice_line_transaction_type = 'DiscountLineDetail' then 'debit'
             else 'credit' 
         end as transaction_type,
@@ -199,8 +197,6 @@ final as (
         ar_accounts.account_id,
         class_id,
         department_id,
-        created_at,
-        updated_at,
         case when invoice_line_transaction_type = 'DiscountLineDetail' then 'credit'
             else 'debit' 
         end as transaction_type,
