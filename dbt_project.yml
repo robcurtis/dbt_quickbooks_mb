@@ -13,9 +13,11 @@ models:
       +schema: quickbooks_intermediate
       +materialized: table
     transaction_lines:
-      +materialized: ephemeral
+      +schema: quickbooks_tmp_transaction_lines
+      +materialized: table
     intermediate:
-      +materialized: ephemeral
+      +schema: quickbooks_tmp_intermediate
+      +materialized: table
 vars:
   quickbooks_union_schemas: ['quickbooks_bhdsc', 'quickbooks_bhec', 'quickbooks_bvsc']
   quickbooks:
