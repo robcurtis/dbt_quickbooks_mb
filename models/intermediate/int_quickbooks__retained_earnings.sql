@@ -42,11 +42,18 @@ retained_earnings_starter as (
 
 
 retained_earnings_beginning as (
-
     select
         *,
-        sum(coalesce(period_net_change, 0)) over (order by source_relation, period_first_day, period_first_day rows unbounded preceding) as period_ending_balance,
-        sum(coalesce(period_net_converted_change, 0)) over (order by source_relation, period_first_day, period_first_day rows unbounded preceding) as period_ending_converted_balance
+        sum(coalesce(period_net_change, 0)) over (
+            partition by source_relation
+            order by period_first_day
+            rows unbounded preceding
+        ) as period_ending_balance,
+        sum(coalesce(period_net_converted_change, 0)) over (
+            partition by source_relation
+            order by period_first_day
+            rows unbounded preceding
+        ) as period_ending_converted_balance
     from retained_earnings_starter
 ),
 
