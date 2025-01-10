@@ -56,7 +56,6 @@ payment_join as (
 ),
 
 final as (
-
     select
         transaction_id,
         payment_join.source_relation,
@@ -66,7 +65,8 @@ final as (
         cast(null as {{ dbt.type_string() }}) as vendor_id,
         amount,
         converted_amount,
-        deposit_to_account_id as account_id,
+        coalesce(deposit_to_account_id, 
+            {{ var('quickbooks__undeposited_funds_account_id', "'UNDEPOSITED_FUNDS'") }}) as account_id,
         cast(null as {{ dbt.type_string() }}) as class_id,
         cast(null as {{ dbt.type_string() }}) as department_id,
         created_at,
@@ -86,7 +86,8 @@ final as (
         cast(null as {{ dbt.type_string() }}) as vendor_id,
         amount,
         converted_amount,
-        coalesce(receivable_account_id, ar_accounts.account_id) as account_id,
+        coalesce(payment_join.receivable_account_id, 
+            case when payment_join.receivable_account_id is null then ar_accounts.account_id end) as account_id,
         cast(null as {{ dbt.type_string() }}) as class_id,
         cast(null as {{ dbt.type_string() }}) as department_id,
         created_at,
@@ -96,8 +97,8 @@ final as (
     from payment_join
 
     left join ar_accounts
-        on ar_accounts.currency_id = payment_join.currency_id
-        and ar_accounts.source_relation = payment_join.source_relation
+        on ar_accounts.source_relation = payment_join.source_relation
+        and (payment_join.receivable_account_id is null or ar_accounts.account_id = payment_join.receivable_account_id)
 )
 
 select *
