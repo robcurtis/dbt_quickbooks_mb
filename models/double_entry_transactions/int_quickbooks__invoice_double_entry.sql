@@ -102,6 +102,7 @@ invoice_join as (
         invoices.source_relation,
         invoice_lines.index,
         invoices.transaction_date as transaction_date,
+        invoices.receivable_account_id,
 
         {% if var('using_invoice_bundle', True) %}
         case when invoice_lines.bundle_id is not null and invoices.total_amount = 0 then invoices.total_amount
@@ -196,7 +197,8 @@ final as (
         cast(null as {{ dbt.type_string() }}) as vendor_id,
         amount,
         converted_amount,
-        ar_accounts.account_id,
+        coalesce(invoice_filter.receivable_account_id,
+            case when invoice_filter.receivable_account_id is null then ar_accounts.account_id end) as account_id,
         class_id,
         department_id,
         created_at,
@@ -211,6 +213,7 @@ final as (
 
     left join ar_accounts
         on ar_accounts.source_relation = invoice_filter.source_relation
+        and (invoice_filter.receivable_account_id is null or ar_accounts.account_id = invoice_filter.receivable_account_id)
 )
 
 select *
