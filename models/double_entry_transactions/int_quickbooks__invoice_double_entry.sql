@@ -189,7 +189,12 @@ final as (
         cast(null as {{ dbt.type_string() }}) as vendor_id,
         amount,
         converted_amount,
-        coalesce(account_id, invoice_filter.receivable_account_id, ar_accounts.account_id, default_ar.default_account_id) as account_id,
+        coalesce(
+            account_id,
+            invoice_filter.receivable_account_id, 
+            case when invoice_filter.receivable_account_id is null then ar_accounts.account_id end,
+            default_ar.default_account_id
+        ) as account_id,
         class_id,
         department_id,
         created_at,
@@ -204,7 +209,7 @@ final as (
 
     left join ar_accounts
         on ar_accounts.source_relation = invoice_filter.source_relation
-        and (invoice_filter.receivable_account_id is null or ar_accounts.account_id = invoice_filter.receivable_account_id)
+        and ar_accounts.account_id = coalesce(invoice_filter.receivable_account_id, ar_accounts.account_id)
 
     left join default_ar_account as default_ar
         on invoice_filter.source_relation = default_ar.source_relation
@@ -220,9 +225,11 @@ final as (
         cast(null as {{ dbt.type_string() }}) as vendor_id,
         amount,
         converted_amount,
-        coalesce(invoice_filter.receivable_account_id,
-            ar_accounts.account_id,
-            default_ar.default_account_id) as account_id,
+        coalesce(
+            invoice_filter.receivable_account_id,
+            case when invoice_filter.receivable_account_id is null then ar_accounts.account_id end,
+            default_ar.default_account_id
+        ) as account_id,
         class_id,
         department_id,
         created_at,
@@ -237,7 +244,7 @@ final as (
 
     left join ar_accounts
         on ar_accounts.source_relation = invoice_filter.source_relation
-        and (invoice_filter.receivable_account_id is null or ar_accounts.account_id = invoice_filter.receivable_account_id)
+        and ar_accounts.account_id = coalesce(invoice_filter.receivable_account_id, ar_accounts.account_id)
 
     left join default_ar_account as default_ar
         on invoice_filter.source_relation = default_ar.source_relation
