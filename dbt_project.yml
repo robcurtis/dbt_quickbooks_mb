@@ -68,7 +68,7 @@ vars:
     using_department: false
     using_deposit: true
     using_estimate: true
-    using_invoice: false
+    using_invoice: true
     using_invoice_bundle: false
     using_journal_entry: true
     using_payment: true
