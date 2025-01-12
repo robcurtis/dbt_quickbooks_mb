@@ -213,15 +213,9 @@ final as (
         cast(null as {{ dbt.type_string() }}) as vendor_id,
         amount,
         converted_amount,
-        coalesce(
-            case 
-                when acct.account_type = '{{ var('quickbooks__accounts_receivable_reference', 'Accounts Receivable') }}'
-                and (acct.account_id is null or not acct.is_active)
-                then default_ar.default_account_id
-                else invoice_filter.receivable_account_id
-            end,
-            default_ar.default_account_id
-        ) as account_id,
+        coalesce(invoice_filter.receivable_account_id,
+            ar_accounts.account_id,
+            default_ar.default_account_id) as account_id,
         class_id,
         department_id,
         created_at,
@@ -234,13 +228,12 @@ final as (
         end as transaction_source
     from invoice_filter
 
-    left join accounts as acct
-        on invoice_filter.receivable_account_id = acct.account_id
-        and invoice_filter.source_relation = acct.source_relation
+    left join ar_accounts
+        on ar_accounts.source_relation = invoice_filter.source_relation
+        and (invoice_filter.receivable_account_id is null or ar_accounts.account_id = invoice_filter.receivable_account_id)
 
     left join default_ar_account as default_ar
         on invoice_filter.source_relation = default_ar.source_relation
-        and coalesce(acct.currency_id, default_ar.currency_id) = default_ar.currency_id
 )
 
 select *
