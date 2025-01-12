@@ -84,12 +84,14 @@ bundle_income_accounts as (
 {% endif %}
 
 ar_accounts as (
-
-    select 
-        account_id,
+    select distinct
+        first_value(account_id) over (
+            partition by source_relation, currency_id
+            order by account_number
+        ) as account_id,
+        currency_id,
         source_relation
     from accounts
-
     where account_type = '{{ var('quickbooks__accounts_receivable_reference', 'Accounts Receivable') }}'
         and is_active
         and not is_sub_account
