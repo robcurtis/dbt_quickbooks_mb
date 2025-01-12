@@ -31,19 +31,10 @@ final as (
         coalesce(invoice_lines.sales_item_item_id, invoice_lines.item_id) as item_id,
         coalesce(invoice_lines.quantity, invoice_lines.sales_item_quantity) as item_quantity,
         invoice_lines.sales_item_unit_price as item_unit_price,
-        case 
-            when invoice_lines.account_id is not null 
-                then invoice_lines.account_id
-            when invoice_lines.sales_item_account_id is not null 
-                then invoice_lines.sales_item_account_id
-            when items.income_account_id is not null 
-                then items.income_account_id
-            when items.expense_account_id is not null 
-                then items.expense_account_id
-            when items.asset_account_id is not null 
-                then items.asset_account_id
-            else null  -- This will help us identify problematic records
-        end as account_id,
+        case when invoice_lines.account_id is null
+            then coalesce(items.income_account_id, items.expense_account_id, items.asset_account_id)
+            else invoice_lines.account_id
+                end as account_id,
         coalesce(invoice_lines.discount_class_id, invoice_lines.sales_item_class_id) as class_id,
         invoices.department_id,
         invoices.customer_id,
@@ -67,4 +58,3 @@ final as (
 
 select *
 from final
-where account_id is not null
