@@ -31,20 +31,6 @@ accounts as (
     from {{ ref('stg_quickbooks__account') }}
 ),
 
-default_ar_account as (
-    select distinct
-        first_value(account_id) over (
-            partition by source_relation, currency_id
-            order by updated_at desc
-        ) as default_account_id,
-        currency_id,
-        source_relation
-    from accounts
-    where account_type = '{{ var('quickbooks__accounts_receivable_reference', 'Accounts Receivable') }}'
-        and is_active
-        and not is_sub_account
-),
-
 
 {% if var('using_invoice_bundle', True) %}
 
@@ -190,11 +176,8 @@ final as (
         amount,
         converted_amount,
         coalesce(
-            account_id,
-            invoice_filter.receivable_account_id, 
-            case when invoice_filter.receivable_account_id is null then ar_accounts.account_id end,
-            default_ar.default_account_id
-        ) as account_id,
+            invoice_filter.account_id,
+            case when invoice_filter.account_id is null then ar_accounts.account_id end) as account_id,
         class_id,
         department_id,
         created_at,
@@ -209,10 +192,6 @@ final as (
 
     left join ar_accounts
         on ar_accounts.source_relation = invoice_filter.source_relation
-        and ar_accounts.account_id = coalesce(invoice_filter.receivable_account_id, ar_accounts.account_id)
-
-    left join default_ar_account as default_ar
-        on invoice_filter.source_relation = default_ar.source_relation
 
     union all
 
@@ -227,9 +206,7 @@ final as (
         converted_amount,
         coalesce(
             invoice_filter.receivable_account_id,
-            case when invoice_filter.receivable_account_id is null then ar_accounts.account_id end,
-            default_ar.default_account_id
-        ) as account_id,
+            case when invoice_filter.receivable_account_id is null then ar_accounts.account_id end) as account_id,
         class_id,
         department_id,
         created_at,
@@ -244,10 +221,6 @@ final as (
 
     left join ar_accounts
         on ar_accounts.source_relation = invoice_filter.source_relation
-        and ar_accounts.account_id = coalesce(invoice_filter.receivable_account_id, ar_accounts.account_id)
-
-    left join default_ar_account as default_ar
-        on invoice_filter.source_relation = default_ar.source_relation
 )
 
 select *
