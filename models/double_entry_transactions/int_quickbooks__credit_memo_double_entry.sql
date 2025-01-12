@@ -33,7 +33,7 @@ df_accounts as (
     select distinct
         first_value(account_id) over (
             partition by source_relation, currency_id
-            order by account_number
+            order by updated_at desc
         ) as account_id,
         currency_id,
         source_relation
