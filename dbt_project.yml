@@ -19,7 +19,7 @@ models:
       +schema: quickbooks_tmp_intermediate
       +materialized: table
 vars:
-  quickbooks_union_schemas: ['quickbooks_bhdsc', 'quickbooks_bhec', 'quickbooks_bvsc']
+  quickbooks_union_schemas: ['quickbooks_bhdsc', 'quickbooks_bhec', 'quickbooks_bvsc', 'quickbooks_cove']
   quickbooks:
     account: "{{ ref('stg_quickbooks__account') }}"
     address: "{{ ref('stg_quickbooks__address') }}"
