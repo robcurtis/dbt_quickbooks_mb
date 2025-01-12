@@ -234,8 +234,13 @@ final as (
         end as transaction_source
     from invoice_filter
 
+    left join accounts as acct
+        on invoice_filter.receivable_account_id = acct.account_id
+        and invoice_filter.source_relation = acct.source_relation
+
     left join default_ar_account as default_ar
         on invoice_filter.source_relation = default_ar.source_relation
+        and coalesce(acct.currency_id, default_ar.currency_id) = default_ar.currency_id
 )
 
 select *
