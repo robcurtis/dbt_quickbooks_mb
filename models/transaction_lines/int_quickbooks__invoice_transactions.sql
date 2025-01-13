@@ -58,3 +58,4 @@ final as (
 
 select *
 from final
+where account_id is not null
