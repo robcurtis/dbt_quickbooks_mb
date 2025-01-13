@@ -15,6 +15,7 @@ table_variables:
   using_credit_memo:
     - credit_memo_line
     - credit_memo
+    - credit_memo_line_bundle
   using_department:
     - department
   using_deposit:

@@ -115,16 +115,31 @@ invoice_join as (
             else (invoice_lines.amount * coalesce(invoices.exchange_rate, 1))
         end as converted_amount,
         case when invoice_lines.detail_type is not null then invoice_lines.detail_type
-            when coalesce(invoice_lines.account_id, invoice_lines.sales_item_account_id, items.parent_income_account_id, items.income_account_id, bundle_income_accounts.account_id) is not null then 'SalesItemLineDetail'
+            when coalesce(
+                invoice_lines.account_id, 
+                invoice_lines.sales_item_account_id, 
+                invoice_bundles.account_id,
+                items.parent_income_account_id, 
+                items.income_account_id, 
+                bundle_income_accounts.account_id
+            ) is not null then 'SalesItemLineDetail'
             when invoice_lines.discount_account_id is not null then 'DiscountLineDetail'
-            when coalesce(invoice_lines.account_id, invoice_lines.sales_item_account_id, items.parent_income_account_id, items.income_account_id, bundle_income_accounts.account_id, invoice_lines.discount_account_id) is null then 'NoAccountMapping'
+            when coalesce(
+                invoice_lines.account_id, 
+                invoice_lines.sales_item_account_id, 
+                invoice_bundles.account_id,
+                items.parent_income_account_id, 
+                items.income_account_id, 
+                bundle_income_accounts.account_id, 
+                invoice_lines.discount_account_id
+            ) is null then 'NoAccountMapping'
         end as invoice_line_transaction_type,
         coalesce(
             invoice_lines.account_id, 
             invoice_lines.sales_item_account_id, 
+            invoice_bundles.account_id, 
             items.parent_income_account_id, 
             items.income_account_id, 
-            invoice_bundles.account_id,
             bundle_income_accounts.account_id, 
             invoice_lines.discount_account_id
         ) as account_id,
@@ -133,11 +148,30 @@ invoice_join as (
         invoice_lines.amount as amount,
         (invoice_lines.amount * coalesce(invoices.exchange_rate, 1)) as converted_amount,
         case when invoice_lines.detail_type is not null then invoice_lines.detail_type
-            when coalesce(invoice_lines.account_id, invoice_lines.sales_item_account_id, items.parent_income_account_id, items.income_account_id) is not null then 'SalesItemLineDetail'
+            when coalesce(
+                invoice_lines.account_id, 
+                invoice_lines.sales_item_account_id, 
+                invoice_bundles.account_id,
+                items.parent_income_account_id, 
+                items.income_account_id
+            ) is not null then 'SalesItemLineDetail'
             when invoice_lines.discount_account_id is not null then 'DiscountLineDetail'
-            when coalesce(invoice_lines.account_id, invoice_lines.sales_item_account_id, items.parent_income_account_id, items.income_account_id, invoice_lines.discount_account_id) is null then 'NoAccountMapping'
+            when coalesce(
+                invoice_lines.account_id, 
+                invoice_lines.sales_item_account_id, 
+                invoice_bundles.account_id,
+                items.parent_income_account_id, 
+                items.income_account_id, 
+                invoice_lines.discount_account_id
+            ) is null then 'NoAccountMapping'
         end as invoice_line_transaction_type,
-        coalesce(invoice_lines.account_id, invoice_lines.sales_item_account_id, items.income_account_id, invoice_lines.discount_account_id) as account_id,
+        coalesce(
+            invoice_lines.account_id, 
+            invoice_lines.sales_item_account_id, 
+            invoice_bundles.account_id,
+            items.income_account_id, 
+            invoice_lines.discount_account_id
+        ) as account_id,
         {% endif %}
 
         coalesce(invoice_lines.sales_item_class_id, invoice_lines.discount_class_id, invoices.class_id) as class_id,
@@ -162,12 +196,12 @@ invoice_join as (
         on bundle_income_accounts.bundle_id = invoice_lines.bundle_id
         and bundle_income_accounts.source_relation = invoice_lines.source_relation
 
-    left join invoice_bundles
+    {% endif %}
+
+    inner join invoice_bundles
         on invoice_bundles.invoice_id = invoice_lines.invoice_id
         and invoice_bundles.index = invoice_lines.index
         and invoice_bundles.source_relation = invoice_lines.source_relation
-
-    {% endif %}
 ),
 
 invoice_filter as (
@@ -236,8 +270,3 @@ final as (
 
 select *
 from final
--- where transaction_id in (
---     select transaction_id 
---     from invoice_join 
---     where account_id is not null
--- )
