@@ -69,7 +69,7 @@ vars:
     using_deposit: true
     using_estimate: true
     using_invoice: true
-    using_invoice_bundle: false
+    using_invoice_bundle: true
     using_journal_entry: true
     using_payment: true
     using_refund_receipt: true
