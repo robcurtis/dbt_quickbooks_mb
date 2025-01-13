@@ -53,12 +53,16 @@ final as (
     {% if var('financial_statement_ordinal') %}
         left join ordinals as account_number_ordinal
             on balances_earnings_unioned.account_number = account_number_ordinal.account_number
+            and balances_earnings_unioned.source_relation = account_number_ordinal.source_relation
         left join ordinals as account_sub_type_ordinal
             on balances_earnings_unioned.account_sub_type = account_sub_type_ordinal.account_sub_type
+            and balances_earnings_unioned.source_relation = account_sub_type_ordinal.source_relation
         left join ordinals as account_type_ordinal
             on balances_earnings_unioned.account_type = account_type_ordinal.account_type
+            and balances_earnings_unioned.source_relation = account_type_ordinal.source_relation
         left join ordinals as account_class_ordinal
             on balances_earnings_unioned.account_class = account_class_ordinal.account_class
+            and balances_earnings_unioned.source_relation = account_class_ordinal.source_relation
     {% endif %}
 )
 
