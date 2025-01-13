@@ -101,7 +101,6 @@ final as (
 
     left join ar_accounts
         on ar_accounts.source_relation = payment_join.source_relation
-        and ar_accounts.account_id = coalesce(payment_join.receivable_account_id, ar_accounts.account_id)
 )
 
 select *

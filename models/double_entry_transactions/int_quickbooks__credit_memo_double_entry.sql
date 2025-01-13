@@ -114,8 +114,7 @@ final as (
     from credit_memo_join
 
     left join df_accounts
-        on df_accounts.currency_id = credit_memo_join.currency_id
-        and df_accounts.source_relation = credit_memo_join.source_relation
+        on df_accounts.source_relation = credit_memo_join.source_relation
 )
 
 select *
