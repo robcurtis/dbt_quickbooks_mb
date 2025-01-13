@@ -4,42 +4,19 @@ with general_ledger_balances as (
     from {{ ref('int_quickbooks__general_ledger_balances') }}
 ),
 
-revenue_starter as (
+net_income_loss as (
 
     select
         period_first_day,
         source_relation,
-        sum(period_net_change) as revenue_net_change,
-        sum(period_net_converted_change) as revenue_net_converted_change
+        sum(case when account_class = 'Revenue' then period_net_change else 0 end) as revenue_net_change,
+        sum(case when account_class = 'Revenue' then period_net_converted_change else 0 end) as revenue_net_converted_change,
+        sum(case when account_class = 'Expense' then period_net_change else 0 end) as expense_net_change,
+        sum(case when account_class = 'Expense' then period_net_converted_change else 0 end) as expense_net_converted_change
     from general_ledger_balances
-    
-    where account_class = 'Revenue'
-
     {{ dbt_utils.group_by(2) }} 
 ),
 
-expense_starter as (
-
-    select 
-        period_first_day,
-        source_relation,
-        sum(period_net_change) as expense_net_change,
-        sum(period_net_converted_change) as expense_net_converted_change
-    from general_ledger_balances
-    
-    where account_class = 'Expense'
-
-    {{ dbt_utils.group_by(2) }} 
-),
-
-net_income_loss as (
-
-    select *
-    from revenue_starter
-
-    join expense_starter 
-        using (period_first_day, source_relation)
-),
 retained_earnings_starter as (
 
     select
@@ -95,7 +72,7 @@ final as (
         lag(coalesce(period_ending_balance,0)) over (order by source_relation, period_first_day) as period_beginning_balance,
         period_ending_balance,
         period_net_converted_change,
-        lag(coalesce(period_ending_balance,0)) over (order by source_relation, period_first_day) as period_beginning_converted_balance,
+        lag(coalesce(period_ending_converted_balance,0)) over (order by source_relation, period_first_day) as period_beginning_converted_balance,
         period_ending_converted_balance
     from retained_earnings_beginning
 )
