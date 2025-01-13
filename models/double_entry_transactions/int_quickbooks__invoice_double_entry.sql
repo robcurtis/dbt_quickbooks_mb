@@ -119,7 +119,15 @@ invoice_join as (
             when invoice_lines.discount_account_id is not null then 'DiscountLineDetail'
             when coalesce(invoice_lines.account_id, invoice_lines.sales_item_account_id, items.parent_income_account_id, items.income_account_id, bundle_income_accounts.account_id, invoice_lines.discount_account_id) is null then 'NoAccountMapping'
         end as invoice_line_transaction_type,
-        coalesce(invoice_lines.account_id, invoice_lines.sales_item_account_id, items.parent_income_account_id, items.income_account_id, bundle_income_accounts.account_id, invoice_lines.discount_account_id) as account_id,
+        coalesce(
+            invoice_lines.account_id, 
+            invoice_lines.sales_item_account_id, 
+            items.parent_income_account_id, 
+            items.income_account_id, 
+            invoice_bundles.account_id,
+            bundle_income_accounts.account_id, 
+            invoice_lines.discount_account_id
+        ) as account_id,
 
         {% else %}
         invoice_lines.amount as amount,
@@ -153,6 +161,11 @@ invoice_join as (
     left join bundle_income_accounts
         on bundle_income_accounts.bundle_id = invoice_lines.bundle_id
         and bundle_income_accounts.source_relation = invoice_lines.source_relation
+
+    left join invoice_bundles
+        on invoice_bundles.invoice_id = invoice_lines.invoice_id
+        and invoice_bundles.index = invoice_lines.index
+        and invoice_bundles.source_relation = invoice_lines.source_relation
 
     {% endif %}
 ),
@@ -223,3 +236,8 @@ final as (
 
 select *
 from final
+-- where transaction_id in (
+--     select transaction_id 
+--     from invoice_join 
+--     where account_id is not null
+-- )
