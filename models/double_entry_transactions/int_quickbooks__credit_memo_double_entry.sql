@@ -18,9 +18,14 @@ credit_memo_lines as (
 ),
 
 items as (
+    select
+        item.*,
+        parent.income_account_id as parent_income_account_id
+    from {{ ref('stg_quickbooks__item') }} item
 
-    select *
-    from {{ ref('stg_quickbooks__item') }}
+    left join {{ ref('stg_quickbooks__item') }} parent
+        on item.parent_item_id = parent.item_id
+        and item.source_relation = parent.source_relation
 ),
 
 accounts as (
@@ -29,7 +34,55 @@ accounts as (
     from {{ ref('stg_quickbooks__account') }}
 ),
 
-df_accounts as (
+credit_memo_bundles as (
+
+    select *
+    from {{ ref('stg_quickbooks__credit_memo_line_bundle') }}
+),
+
+bundles as (
+
+    select *
+    from {{ ref('stg_quickbooks__bundle') }}
+),
+
+bundle_items as (
+
+    select *
+    from {{ ref('stg_quickbooks__bundle_item') }}
+),
+
+income_accounts as (
+
+    select *
+    from accounts
+
+    where account_sub_type = '{{ var('quickbooks__sales_of_product_income_reference', 'SalesOfProductIncome') }}'
+),
+
+bundle_income_accounts as (
+
+    select distinct
+        coalesce(parent.income_account_id, income_accounts.account_id) as account_id,
+        coalesce(parent.source_relation, income_accounts.source_relation) as source_relation,
+        bundle_items.bundle_id
+
+    from items
+
+    left join items as parent
+        on items.parent_item_id = parent.item_id
+        and items.source_relation = parent.source_relation
+
+    inner join income_accounts
+        on income_accounts.account_id = items.income_account_id
+        and income_accounts.source_relation = items.source_relation
+
+    inner join bundle_items
+        on bundle_items.item_id = items.item_id
+        and bundle_items.source_relation = items.source_relation
+),
+
+ar_accounts as (
     select distinct
         first_value(account_id) over (
             partition by source_relation, currency_id
@@ -52,9 +105,19 @@ credit_memo_join as (
         credit_memos.transaction_date,
         credit_memo_lines.amount,
         (credit_memo_lines.amount * coalesce(credit_memos.exchange_rate, 1)) as converted_amount,
-        coalesce(credit_memo_lines.sales_item_account_id, items.income_account_id, items.expense_account_id) as account_id,
+        coalesce(
+            credit_memo_bundles.account_id,
+            credit_memo_lines.sales_item_account_id, 
+            items.income_account_id, 
+            items.expense_account_id
+        ) as account_id,
         credit_memos.customer_id,
-        coalesce(credit_memo_lines.sales_item_class_id, credit_memo_lines.discount_class_id, credit_memos.class_id) as class_id,
+        coalesce(
+            credit_memo_bundles.class_id,
+            credit_memo_lines.sales_item_class_id, 
+            credit_memo_lines.discount_class_id, 
+            credit_memos.class_id
+        ) as class_id,
         credit_memos.department_id,
         credit_memos.currency_id,
         credit_memos.created_at,
@@ -69,8 +132,17 @@ credit_memo_join as (
     left join items
         on credit_memo_lines.sales_item_item_id = items.item_id
         and credit_memo_lines.source_relation = items.source_relation
+    
+    left join credit_memo_bundles
+        on credit_memo_lines.credit_memo_id = credit_memo_bundles.credit_memo_id
+        and credit_memo_lines.index = credit_memo_bundles.credit_memo_line_index
+        and credit_memo_lines.source_relation = credit_memo_bundles.source_relation
 
-    where coalesce(credit_memo_lines.discount_account_id, credit_memo_lines.sales_item_account_id, credit_memo_lines.sales_item_item_id) is not null
+    where coalesce(
+        credit_memo_bundles.account_id,
+        credit_memo_lines.discount_account_id, 
+        credit_memo_lines.sales_item_account_id, 
+        credit_memo_lines.sales_item_item_id) is not null
 ),
 
 final as (
@@ -104,7 +176,7 @@ final as (
         cast(null as {{ dbt.type_string() }}) as vendor_id,
         amount * -1 as amount,
         converted_amount * -1 as converted_amount,
-        df_accounts.account_id,
+        ar_accounts.account_id,
         class_id,
         department_id,
         created_at,
@@ -113,10 +185,9 @@ final as (
         'credit_memo' as transaction_source
     from credit_memo_join
 
-    left join df_accounts
-        on df_accounts.source_relation = credit_memo_join.source_relation
+    left join ar_accounts
+        on ar_accounts.source_relation = credit_memo_join.source_relation
 )
 
 select *
 from final
-where account_id is not null
