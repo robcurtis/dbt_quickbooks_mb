@@ -161,7 +161,7 @@ invoice_filter as (
 
     select *
     from invoice_join
-    where invoice_line_transaction_type not in ('SubTotalLineDetail','NoAccountMapping')
+    where invoice_line_transaction_type not in ('SubTotalLineDetail')
 ),
 
 final as (
@@ -175,7 +175,9 @@ final as (
         cast(null as {{ dbt.type_string() }}) as vendor_id,
         amount,
         converted_amount,
-        invoice_filter.account_id,
+        coalesce(
+            invoice_filter.account_id,
+            case when invoice_filter.account_id is null then ar_accounts.account_id end) as account_id,
         class_id,
         department_id,
         created_at,
