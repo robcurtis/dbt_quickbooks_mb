@@ -96,6 +96,17 @@ ar_accounts as (
         and not is_sub_account
 ),
 
+credit_memo_bundle_accounts as (
+    select distinct
+        credit_memo_id,
+        source_relation,
+        first_value(account_id) over (
+            partition by credit_memo_id, source_relation
+            order by credit_memo_line_index
+        ) as bundle_account_id
+    from credit_memo_bundles
+),
+
 credit_memo_join as (
 
     select
@@ -103,19 +114,19 @@ credit_memo_join as (
         credit_memos.source_relation,
         credit_memo_lines.index,
         credit_memos.transaction_date,
-        credit_memo_lines.amount,
-        (credit_memo_lines.amount * coalesce(credit_memos.exchange_rate, 1)) as converted_amount,
+        coalesce(credit_memo_bundles.amount, credit_memo_lines.amount) as amount,
+        coalesce(credit_memo_bundles.amount, credit_memo_lines.amount) * coalesce(credit_memos.exchange_rate, 1) as converted_amount,
         coalesce(
-            credit_memo_bundles.account_id,
-            credit_memo_lines.sales_item_account_id, 
-            items.income_account_id, 
+            credit_memo_bundle_accounts.bundle_account_id,
+            credit_memo_lines.sales_item_account_id,
+            items.income_account_id,
             items.expense_account_id
         ) as account_id,
         credit_memos.customer_id,
         coalesce(
             credit_memo_bundles.class_id,
-            credit_memo_lines.sales_item_class_id, 
-            credit_memo_lines.discount_class_id, 
+            credit_memo_lines.sales_item_class_id,
+            credit_memo_lines.discount_class_id,
             credit_memos.class_id
         ) as class_id,
         credit_memos.department_id,
@@ -132,17 +143,22 @@ credit_memo_join as (
     left join items
         on credit_memo_lines.sales_item_item_id = items.item_id
         and credit_memo_lines.source_relation = items.source_relation
-    
+
     left join credit_memo_bundles
         on credit_memo_lines.credit_memo_id = credit_memo_bundles.credit_memo_id
         and credit_memo_lines.index = credit_memo_bundles.credit_memo_line_index
         and credit_memo_lines.source_relation = credit_memo_bundles.source_relation
 
+    left join credit_memo_bundle_accounts
+        on credit_memo_bundles.credit_memo_id = credit_memo_bundle_accounts.credit_memo_id
+        and credit_memo_bundles.source_relation = credit_memo_bundle_accounts.source_relation
+
     where coalesce(
-        credit_memo_bundles.account_id,
-        credit_memo_lines.discount_account_id, 
-        credit_memo_lines.sales_item_account_id, 
-        credit_memo_lines.sales_item_item_id) is not null
+        credit_memo_bundle_accounts.bundle_account_id,
+        credit_memo_lines.sales_item_account_id,
+        items.income_account_id,
+        items.expense_account_id
+    ) is not null
 ),
 
 final as (
