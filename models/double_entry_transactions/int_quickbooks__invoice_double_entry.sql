@@ -202,7 +202,7 @@ final as (
         cast(null as {{ dbt.type_string() }}) as vendor_id,
         amount,
         converted_amount,
-        coalesce(
+        CASE WHEN invoice_filter.account_id is null then null else coalesce(
             invoice_filter.receivable_account_id,
             case when invoice_filter.receivable_account_id is null then ar_accounts.account_id end) as account_id,
         class_id,
@@ -223,3 +223,4 @@ final as (
 
 select *
 from final
+where account_id is not null

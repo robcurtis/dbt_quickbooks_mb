@@ -104,7 +104,7 @@ final as (
         cast(null as {{ dbt.type_string() }}) as vendor_id,
         amount * -1 as amount,
         converted_amount * -1 as converted_amount,
-        df_accounts.account_id,
+        case when credit_memo_join.account_id is null then null else df_accounts.account_id end as account_id,
         class_id,
         department_id,
         created_at,
@@ -119,3 +119,4 @@ final as (
 
 select *
 from final
+where account_id is not null
