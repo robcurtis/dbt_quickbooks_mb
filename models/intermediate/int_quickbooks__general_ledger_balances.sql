@@ -169,19 +169,30 @@ final as (
         period_last_day,
         coalesce(period_net_change, 0) as period_net_change,
         coalesce(period_beginning_balance_starter,
-            first_value(period_ending_balance_starter) over (partition by gl_partition, source_relation 
-            order by source_relation, period_last_day rows unbounded preceding)) as period_beginning_balance,
+            first_value(period_ending_balance_starter) over (
+                partition by gl_partition 
+                order by source_relation, account_id, class_id, period_last_day 
+                rows unbounded preceding
+            )) as period_beginning_balance,
         coalesce(period_ending_balance_starter,
-            first_value(period_ending_balance_starter) over (partition by gl_partition, source_relation 
-            order by source_relation, period_last_day rows unbounded preceding)) as period_ending_balance,
+            first_value(period_ending_balance_starter) over (
+                partition by gl_partition 
+                order by source_relation, account_id, class_id, period_last_day 
+                rows unbounded preceding
+            )) as period_ending_balance,
         coalesce(period_net_converted_change, 0) as period_net_converted_change,
         coalesce(period_beginning_converted_balance_starter,
-            first_value(period_ending_converted_balance_starter) over (partition by gl_converted_partition, source_relation 
-            order by source_relation, period_last_day rows unbounded preceding)) as period_beginning_converted_balance,
+            first_value(period_ending_converted_balance_starter) over (
+                partition by gl_converted_partition 
+                order by source_relation, account_id, class_id, period_last_day 
+                rows unbounded preceding
+            )) as period_beginning_converted_balance,
         coalesce(period_ending_converted_balance_starter,
-            first_value(period_ending_converted_balance_starter) over (partition by gl_partition, source_relation 
-            order by source_relation, period_last_day rows unbounded preceding)) as period_ending_converted_balance
-
+            first_value(period_ending_converted_balance_starter) over (
+                partition by gl_converted_partition 
+                order by source_relation, account_id, class_id, period_last_day 
+                rows unbounded preceding
+            )) as period_ending_converted_balance
     from gl_value_partition
 )
 
