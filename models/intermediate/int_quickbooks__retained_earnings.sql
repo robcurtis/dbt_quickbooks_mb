@@ -66,12 +66,12 @@ final as (
         period_net_change,
         sum(period_net_change) over (
             partition by source_relation 
-            order by fiscal_year
+            order by date_year
             rows between unbounded preceding and 1 preceding
         ) as period_beginning_balance,
         sum(period_net_change) over (
             partition by source_relation 
-            order by fiscal_year
+            order by date_year
             rows between unbounded preceding and 1 preceding
         ) + 
         sum(period_net_change) over (
@@ -82,12 +82,12 @@ final as (
         period_net_converted_change,
         sum(period_net_converted_change) over (
             partition by source_relation 
-            order by fiscal_year
+            order by date_year
             rows between unbounded preceding and 1 preceding
         ) as period_beginning_converted_balance,
         sum(period_net_converted_change) over (
             partition by source_relation 
-            order by fiscal_year
+            order by date_year
             rows between unbounded preceding and 1 preceding
         ) + 
         sum(period_net_converted_change) over (
