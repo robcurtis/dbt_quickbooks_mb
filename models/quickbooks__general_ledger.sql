@@ -76,7 +76,7 @@ select
         WHEN gl.transaction_date <= arc.cutover_date
         THEN dar.account_number
         ELSE gl.account_number
-    END as acocunt_number,
+    END as account_number,
     CASE
         WHEN gl.transaction_date <= arc.cutover_date
         THEN dar.name
