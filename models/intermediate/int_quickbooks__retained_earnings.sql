@@ -7,6 +7,7 @@ with general_ledger_balances as (
 net_income_loss as (
 
     select
+        period_first_day,
         date_year,
         source_relation,
         sum(case when account_class = 'Revenue' then period_net_change else 0 end) as revenue_net_change,
@@ -14,7 +15,7 @@ net_income_loss as (
         sum(case when account_class = 'Expense' then period_net_change else 0 end) as expense_net_change,
         sum(case when account_class = 'Expense' then period_net_converted_change else 0 end) as expense_net_converted_change
     from general_ledger_balances
-    {{ dbt_utils.group_by(2) }} 
+    {{ dbt_utils.group_by(3) }} 
 ),
 
 retained_earnings_starter as (
@@ -32,50 +33,43 @@ retained_earnings_starter as (
         cast('Equity' as {{ dbt.type_string() }}) as account_class,
         cast(null as {{ dbt.type_string() }}) as class_id,
         cast('balance_sheet' as {{ dbt.type_string() }}) as financial_statement_helper,
-        cast({{ dbt.date_trunc("year", "period_first_day") }} as date) as date_year,
-        cast(period_first_day as date) as period_first_day,
-        {{ dbt.last_day("period_first_day", "month") }} as period_last_day,
+        fiscal_year as date_year,
+        period_first_day,
+        (date_trunc('month', period_first_day) + interval '1 month' - interval '1 day') as period_last_day,
         (revenue_net_change - expense_net_change) as period_net_change,
         (revenue_net_converted_change - expense_net_converted_change) as period_net_converted_change
     from net_income_loss
 ),
 
-
 retained_earnings_beginning as (
 
     select
         *,
-        sum(coalesce(period_net_change, 0)) over (partition by source_relation, date_year order by source_relation, date_year rows unbounded preceding) as period_ending_balance,
-        sum(coalesce(period_net_converted_change, 0)) over (partition by source_relation, date_year order by source_relation, date_year rows unbounded preceding) as period_ending_converted_balance
+        -- Prior years' retained earnings (constant for the year)
+        sum(period_net_change) over (
+            partition by source_relation 
+            order by fiscal_year
+            rows between unbounded preceding and 1 preceding
+        ) + 
+        -- Current year's cumulative net income (changes monthly)
+        sum(period_net_change) over (
+            partition by source_relation, fiscal_year 
+            order by period_first_day
+            rows between unbounded preceding and current row
+        ) as period_ending_balance,
+        -- Same for converted amounts
+        sum(period_net_converted_change) over (
+            partition by source_relation 
+            order by fiscal_year
+            rows between unbounded preceding and 1 preceding
+        ) + 
+        sum(period_net_converted_change) over (
+            partition by source_relation, fiscal_year 
+            order by period_first_day
+            rows between unbounded preceding and current row
+        ) as period_ending_converted_balance
     from retained_earnings_starter
-),
-
-final as (
-    
-    select
-        account_id,
-        source_relation,
-        account_number,
-        account_name,
-        is_sub_account,
-        parent_account_number,
-        parent_account_name,
-        account_type,
-        account_sub_type,
-        account_class,
-        class_id,
-        financial_statement_helper,
-        date_year,
-        period_first_day,
-        period_last_day,
-        period_net_change,
-        lag(coalesce(period_ending_balance,0)) over (partition by source_relation, date_year order by source_relation, date_year) as period_beginning_balance,
-        period_ending_balance,
-        period_net_converted_change,
-        lag(coalesce(period_ending_converted_balance,0)) over (partition by source_relation, date_year order by source_relation, date_year) as period_beginning_converted_balance,
-        period_ending_converted_balance
-    from retained_earnings_beginning
 )
 
 select *
-from final
+from retained_earnings_beginning
