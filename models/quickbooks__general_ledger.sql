@@ -127,10 +127,10 @@ left join default_ar_account dar on gl.source_relation = dar.source_relation
 ),
 
 final as (select *,
-                 sum(adjusted_amount) over (partition by account_id, account_class, source_relation
-                     order by source_relation, transaction_date, account_id, account_class rows unbounded preceding) as running_balance,
-                 sum(adjusted_converted_amount) over (partition by account_id, account_class, source_relation
-                     order by source_relation, transaction_date, account_id, account_class rows unbounded preceding) as running_converted_balance
+                 sum(adjusted_amount) over (partition by account_id, class_id, source_relation
+                     order by source_relation, transaction_date, account_id, class_id rows unbounded preceding) as running_balance,
+                 sum(adjusted_converted_amount) over (partition by account_id, class_id, source_relation
+                     order by source_relation, transaction_date, account_id, class_id rows unbounded preceding) as running_converted_balance
           from stgd_general_ledger
 )
 
