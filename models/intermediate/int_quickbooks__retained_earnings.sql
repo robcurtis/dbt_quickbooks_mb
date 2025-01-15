@@ -7,7 +7,7 @@ with general_ledger_balances as (
 net_income_loss as (
 
     select
-        period_first_day,
+        date_year,
         source_relation,
         sum(case when account_class = 'Revenue' then period_net_change else 0 end) as revenue_net_change,
         sum(case when account_class = 'Revenue' then period_net_converted_change else 0 end) as revenue_net_converted_change,
@@ -45,12 +45,8 @@ retained_earnings_beginning as (
 
     select
         *,
-        sum(coalesce(period_net_change, 0)) over (
-            partition by source_relation 
-            order by period_first_day 
-            rows unbounded preceding
-        ) as period_ending_balance,
-        sum(coalesce(period_net_converted_change, 0)) over (order by source_relation, period_first_day, period_first_day rows unbounded preceding) as period_ending_converted_balance
+        sum(coalesce(period_net_change, 0)) over (partition by source_relation, date_year order by source_relation, date_year rows unbounded preceding) as period_ending_balance,
+        sum(coalesce(period_net_converted_change, 0)) over (partition by source_relation, date_year order by source_relation, date_year rows unbounded preceding) as period_ending_converted_balance
     from retained_earnings_starter
 ),
 
@@ -73,13 +69,10 @@ final as (
         period_first_day,
         period_last_day,
         period_net_change,
-        lag(coalesce(period_ending_balance,0)) over (
-            partition by source_relation 
-            order by period_first_day
-        ) as period_beginning_balance,
+        lag(coalesce(period_ending_balance,0)) over (partition by source_relation, date_year order by source_relation, date_year) as period_beginning_balance,
         period_ending_balance,
         period_net_converted_change,
-        lag(coalesce(period_ending_converted_balance,0)) over (order by source_relation, period_first_day) as period_beginning_converted_balance,
+        lag(coalesce(period_ending_converted_balance,0)) over (partition by source_relation, date_year order by source_relation, date_year) as period_beginning_converted_balance,
         period_ending_converted_balance
     from retained_earnings_beginning
 )
