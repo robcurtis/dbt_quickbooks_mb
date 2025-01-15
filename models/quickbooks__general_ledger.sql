@@ -75,7 +75,7 @@ select
     CASE
         WHEN gl.transaction_date <= arc.cutover_date
         THEN dar.account_number
-        ELSE gl.account_number
+        ELSE a.account_number
     END as account_number,
     CASE
         WHEN gl.transaction_date <= arc.cutover_date
@@ -122,6 +122,7 @@ select
     gl.adjusted_amount,
     gl.adjusted_converted_amount
 from {{ ref('int_quickbooks__general_ledger') }} gl
+left join accounts_classification a on gl.source_relation = a.source_relation and gl.account_id = a.account_id
 left join ar_cutover_date_matrix arc on gl.source_relation = arc.source_relation and gl.account_id = arc.account_id
 left join default_ar_account dar on gl.source_relation = dar.source_relation
 ),
