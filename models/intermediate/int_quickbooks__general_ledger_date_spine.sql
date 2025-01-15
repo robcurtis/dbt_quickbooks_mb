@@ -54,7 +54,7 @@ with spine as (
 
 general_ledger as (
     select *
-    from {{ ref('quickbooks__general_ledger') }}
+    from {{ ref('int_quickbooks__general_ledger') }}
 ),
 
 date_spine as (
