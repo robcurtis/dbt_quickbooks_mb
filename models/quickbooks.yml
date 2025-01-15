@@ -113,6 +113,10 @@ models:
   - name: int_quickbooks__invoice_join
     description: Table that joins a single invoice transactions with the corresponding payment (if paid) and corresponding estimate (if provided).
 
+  - name: int_quickbooks__ar_inactive_dates
+    description: >
+      Table that creates a single record for each account in the quickbooks__general_ledger model. This table is used to create the int_quickbooks__general_ledger_by_period table.
+
   - name: int_quickbooks__sales_union
     description: >
       Table that unions transactional tables that are representative of a sale. The sale transactional tables are: int_quickbooks__sales_receipt_transactions
