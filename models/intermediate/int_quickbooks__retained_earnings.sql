@@ -33,7 +33,7 @@ retained_earnings_starter as (
         cast('Equity' as {{ dbt.type_string() }}) as account_class,
         cast(null as {{ dbt.type_string() }}) as class_id,
         cast('balance_sheet' as {{ dbt.type_string() }}) as financial_statement_helper,
-        fiscal_year as date_year,
+        date_year,
         period_first_day,
         (date_trunc('month', period_first_day) + interval '1 month' - interval '1 day') as period_last_day,
         (revenue_net_change - expense_net_change) as period_net_change,
@@ -48,23 +48,23 @@ retained_earnings_beginning as (
         -- Prior years' retained earnings (constant for the year)
         sum(period_net_change) over (
             partition by source_relation 
-            order by fiscal_year
+            order by date_year
             rows between unbounded preceding and 1 preceding
         ) + 
         -- Current year's cumulative net income (changes monthly)
         sum(period_net_change) over (
-            partition by source_relation, fiscal_year 
+            partition by source_relation, date_year 
             order by period_first_day
             rows between unbounded preceding and current row
         ) as period_ending_balance,
         -- Same for converted amounts
         sum(period_net_converted_change) over (
             partition by source_relation 
-            order by fiscal_year
+            order by date_year
             rows between unbounded preceding and 1 preceding
         ) + 
         sum(period_net_converted_change) over (
-            partition by source_relation, fiscal_year 
+            partition by source_relation, date_year 
             order by period_first_day
             rows between unbounded preceding and current row
         ) as period_ending_converted_balance
