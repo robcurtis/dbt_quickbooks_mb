@@ -1,7 +1,7 @@
 with general_ledger as (
 
     select *
-    from {{ ref('quickbooks__general_ledger') }}
+    from {{ ref('int_quickbooks__general_ledger') }}
 ),
 
 gl_accounting_periods as (
