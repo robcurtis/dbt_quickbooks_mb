@@ -49,7 +49,7 @@ final as (
         journal_entry_lines.vendor_id,
         journal_entry_lines.amount,
         (journal_entry_lines.amount * coalesce(journal_entries.exchange_rate, 1)) as converted_amount,
-        journal_entry_lines.account_id
+        journal_entry_lines.account_id,
         class_id,
         journal_entry_lines.department_id,
         journal_entries.created_at,
