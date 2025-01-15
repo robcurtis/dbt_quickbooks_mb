@@ -97,6 +97,14 @@ models:
       for each period through the use of the int_quickbooks__general_ledger_date_spine model. Further, period balances are only applied to balance
       sheet accounts while income statement accounts do not have a persisting balance rather a period net change. Please note, a period equates to one month. 
 
+  - name: int_quickbooks__general_ledger
+    description: >
+      Table that creates a single record for each transaction in the quickbooks__general_ledger model. This table is used to create the int_quickbooks__general_ledger_by_period table.
+
+  - name: int_quickbooks__general_ledger_by_period
+    description: >
+      Table that creates a single record for each transaction in the quickbooks__general_ledger model. This table is used to create the int_quickbooks__general_ledger_by_period table.
+
   - name: int_quickbooks__general_ledger_date_spine
     description: >
       Table that creates a date spine by month with the first date being the minimum transaction date from the quickbooks__general_ledger

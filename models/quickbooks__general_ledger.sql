@@ -1,90 +1,166 @@
-with unioned_models as (
-
-    {{ dbt_utils.union_relations(get_enabled_unioned_models()) }}
+with accounts as (
+    select * from {{ ref('stg_quickbooks__account') }}
 ),
 
-gl_union as (
+accounts_classification as (
+    select * from {{ ref('int_quickbooks__account_classifications') }}
+),
 
-    select transaction_id,
-        source_relation,
-        index,
-        transaction_date,
-        customer_id,
-        vendor_id,
-        amount,
-        converted_amount,
+default_ar_account as (
+    select a.*
+    from (
+        select distinct
+        first_value(a.account_id) over (
+            partition by a.source_relation, a.currency_id
+            order by a.updated_at desc
+        ) as default_account_id,
+        currency_id,
+        source_relation
+    from {{ ref('stg_quickbooks__account') }} a
+        where account_sub_type = 'AccountsReceivable'
+        and is_active
+        and not is_sub_account) t1
+    left join accounts_classification a on t1.source_relation = a.source_relation and t1.default_account_id = a.account_id
+    where account_sub_type = 'AccountsReceivable'
+        and is_active
+        and not is_sub_account
+),
+
+first_activity as (
+    select
         account_id,
-        class_id,
-        department_id,
-        transaction_type,
-        transaction_source,
-        created_at,
-        updated_at
-    from unioned_models
+        source_relation,
+        min(period_first_day) as first_activity_date
+    from {{ ref('int_quickbooks__general_ledger_by_period') }}
+    where period_net_change != 0
+    group by account_id, source_relation
 ),
 
-accounts as (
-
-    select *
-    from {{ ref('int_quickbooks__account_classifications') }}
-),
-
-
-adjusted_gl as (
-    
+inactive_check as (
     select
-        {{ dbt_utils.generate_surrogate_key(['gl_union.transaction_id', 'gl_union.source_relation', 'gl_union.index',
-            'gl_union.account_id', ' gl_union.transaction_type', 'gl_union.transaction_source']) }} 
-            as unique_id,
-        gl_union.transaction_id,
-        gl_union.source_relation,
-        gl_union.index as transaction_index,
-        gl_union.transaction_date,
-        gl_union.customer_id,
-        gl_union.vendor_id,
-        gl_union.amount,
-        gl_union.account_id,
-        gl_union.class_id,
-        gl_union.department_id,
-        accounts.account_number,
-        accounts.name as account_name,
-        accounts.is_sub_account,
-        accounts.parent_account_number,
-        accounts.parent_account_name,
-        accounts.account_type,
-        accounts.account_sub_type,
-        accounts.financial_statement_helper,
-        accounts.balance as account_current_balance,
-        accounts.classification as account_class,
-        gl_union.transaction_type,
-        gl_union.transaction_source,
-        accounts.transaction_type as account_transaction_type,
-        gl_union.created_at,
-        gl_union.updated_at,
-        case when accounts.transaction_type = gl_union.transaction_type
-            then gl_union.amount
-            else gl_union.amount * -1
-        end as adjusted_amount,
-        case when accounts.transaction_type = gl_union.transaction_type
-            then gl_union.converted_amount
-            else gl_union.converted_amount * -1
-        end as adjusted_converted_amount
-    from gl_union
-
-    left join accounts
-        on gl_union.account_id = accounts.account_id
-        and gl_union.source_relation = accounts.source_relation
+        gl.*,
+        sum(case when period_net_change = 0 then 1 else 0 end)
+            over (partition by gl.account_id, gl.source_relation order by period_first_day rows between 2 preceding and current row) as consecutive_zero_months,
+        lag(period_first_day, 3) over (partition by gl.account_id, gl.source_relation order by period_first_day) as start_of_inactive_period
+    from {{ ref('int_quickbooks__general_ledger_by_period') }} gl
+    inner join first_activity fa
+        on gl.account_id = fa.account_id
+        and gl.source_relation = fa.source_relation
+        and gl.period_first_day >= fa.first_activity_date
 ),
 
-final as (
-
+inactive_dates as (
     select
-        *,
-        sum(adjusted_amount) over (partition by account_id, class_id, source_relation
-            order by source_relation, transaction_date, account_id, class_id rows unbounded preceding) as running_balance,
-        sum(adjusted_converted_amount) over (partition by account_id, class_id, source_relation
-            order by source_relation, transaction_date, account_id, class_id rows unbounded preceding) as running_converted_balance
-    from adjusted_gl
+        account_id,
+        source_relation,
+        min(case when consecutive_zero_months = 3 then start_of_inactive_period end) as first_inactive_date,
+        max(case when period_net_change != 0 then period_first_day end) as last_active_date
+    from inactive_check
+    group by account_id, source_relation
+),
+
+ar_cutover_date_pre_matrix as (
+select
+    case
+        when i.first_inactive_date is not null
+        and i.last_active_date >= i.first_inactive_date
+        then i.first_inactive_date
+    end as cutover_date,
+    i.first_inactive_date,
+    i.last_active_date,
+    a.*
+from {{ ref('stg_quickbooks__account') }} a
+left join inactive_dates i
+    on a.account_id = i.account_id
+    and a.source_relation = i.source_relation
+where a.account_sub_type = 'AccountsReceivable'
+),
+
+ar_cutover_date_matrix as (
+select * from ar_cutover_date_pre_matrix a
+where a.is_active and a.is_sub_account and a.cutover_date IS NOT NULL
+order by a.source_relation, a.account_number
+),
+
+-- select * from ar_cutover_date_matrix
+
+stgd_general_ledger as (
+select
+    gl.unique_id,
+    gl.transaction_id,
+    gl.source_relation,
+    gl.transaction_index,
+    gl.transaction_date,
+    gl.customer_id,
+    gl.vendor_id,
+    gl.amount,
+    CASE
+        WHEN gl.transaction_date <= arc.cutover_date
+        THEN dar.account_id
+        ELSE gl.account_id
+    END as account_id,
+    gl.class_id,
+    gl.department_id,
+    CASE
+        WHEN gl.transaction_date <= arc.cutover_date
+        THEN dar.account_number
+        ELSE gl.account_number
+    END as acocunt_number,
+    CASE
+        WHEN gl.transaction_date <= arc.cutover_date
+        THEN dar.name
+        ELSE gl.account_name
+    END as account_name,
+    CASE WHEN gl.transaction_date <= arc.cutover_date
+        THEN dar.is_sub_account
+        ELSE gl.is_sub_account
+    END as is_sub_account,
+    CASE WHEN gl.transaction_date <= arc.cutover_date
+        THEN dar.parent_account_number
+        ELSE gl.parent_account_number
+    END as parent_account_number,
+    CASE when gl.transaction_date <= arc.cutover_date
+        THEN dar.parent_account_name
+        ELSE gl.parent_account_name
+    END as parent_account_name,
+    CASE when gl.transaction_date <= arc.cutover_date
+        THEN dar.account_type
+        ELSE gl.account_type
+    END as account_type,
+    CASE when gl.transaction_date <= arc.cutover_date
+        THEN dar.account_sub_type
+        ELSE gl.account_sub_type
+    END as account_sub_type,
+    gl.financial_statement_helper,
+    CASE when gl.transaction_date <= arc.cutover_date
+        THEN dar.balance
+        ELSE gl.account_current_balance
+    END as account_current_balance,
+    CASE when gl.transaction_date <= arc.cutover_date
+        THEN dar.classification
+        ELSE gl.account_class
+    END as account_class,
+    gl.transaction_type,
+    gl.transaction_source,
+    CASE when gl.transaction_date <= arc.cutover_date
+        THEN dar.transaction_type
+        ELSE gl.account_transaction_type
+    END as account_transaction_type,
+    gl.created_at,
+    gl.updated_at,
+    gl.adjusted_amount,
+    gl.adjusted_converted_amount
+from quickbooks_quickbooks.quickbooks__general_ledger gl
+left join ar_cutover_date_matrix arc on gl.source_relation = arc.source_relation and gl.account_id = arc.account_id
+left join default_ar_account dar on gl.source_relation = dar.source_relation
+),
+
+final as (select *,
+                 sum(adjusted_amount) over (partition by account_id, class_id, source_relation
+                     order by source_relation, transaction_date, account_id, class_id rows unbounded preceding) as running_balance,
+                 sum(adjusted_converted_amount) over (partition by account_id, class_id, source_relation
+                     order by source_relation, transaction_date, account_id, class_id rows unbounded preceding) as running_converted_balance
+          from stgd_general_ledger
 )
 
 select *
