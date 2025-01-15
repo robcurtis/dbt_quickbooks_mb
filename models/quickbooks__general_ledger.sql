@@ -121,7 +121,7 @@ select
     gl.updated_at,
     gl.adjusted_amount,
     gl.adjusted_converted_amount
-from quickbooks_quickbooks.quickbooks__general_ledger gl
+from {{ ref('int_quickbooks__general_ledger') }} gl
 left join ar_cutover_date_matrix arc on gl.source_relation = arc.source_relation and gl.account_id = arc.account_id
 left join default_ar_account dar on gl.source_relation = dar.source_relation
 ),
