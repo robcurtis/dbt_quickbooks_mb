@@ -30,7 +30,6 @@ net_income_loss as (
         (date_trunc('month', period_first_day) + interval '1 month' - interval '1 day'),
         date_year,
         source_relation,
-        fiscal_year,
         account_id,
         account_number,
         account_name,
@@ -127,5 +126,5 @@ final as (
     from retained_earnings_starter
 )
 
-select *
+select DISTINCT *
 from final
