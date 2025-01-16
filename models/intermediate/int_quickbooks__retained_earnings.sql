@@ -6,41 +6,14 @@ with general_ledger_balances as (
 net_income_loss as (
     select
         period_first_day,
-        (date_trunc('month', period_first_day) + interval '1 month' - interval '1 day') as period_last_day,
         date_year,
         source_relation,
-        account_id,
-        account_number,
-        account_name,
-        is_sub_account,
-        parent_account_number,
-        parent_account_name,
-        account_type,
-        account_sub_type,
-        account_class,
-        class_id,
-        financial_statement_helper,
         sum(case when account_class = 'Revenue' then period_net_change else 0 end) as revenue_net_change,
         sum(case when account_class = 'Revenue' then period_net_converted_change else 0 end) as revenue_net_converted_change,
         sum(case when account_class = 'Expense' then period_net_change else 0 end) as expense_net_change,
         sum(case when account_class = 'Expense' then period_net_converted_change else 0 end) as expense_net_converted_change
     from general_ledger_balances
-    group by 
-        period_first_day,
-        (date_trunc('month', period_first_day) + interval '1 month' - interval '1 day'),
-        date_year,
-        source_relation,
-        account_id,
-        account_number,
-        account_name,
-        is_sub_account,
-        parent_account_number,
-        parent_account_name,
-        account_type,
-        account_sub_type,
-        account_class,
-        class_id,
-        financial_statement_helper
+    group by period_first_day, date_year, source_relation
 ),
 
 manual_retained_earnings as (
@@ -71,7 +44,6 @@ retained_earnings_starter as (
         cast('balance_sheet' as {{ dbt.type_string() }}) as financial_statement_helper,
         nil.date_year as date_year,
         nil.period_first_day,
-        nil.period_last_day as period_last_day,
         cast(revenue_net_change - expense_net_change + coalesce(mre.manual_re_change, 0) as {{ dbt.type_numeric() }}) as period_net_change,
         cast(revenue_net_converted_change - expense_net_converted_change + coalesce(mre.manual_re_converted_change, 0) as {{ dbt.type_numeric() }}) as period_net_converted_change
     from net_income_loss nil
@@ -96,7 +68,6 @@ final as (
         financial_statement_helper,
         date_year,
         period_first_day,
-        period_last_day,
         period_net_change,
         case when extract(month from period_first_day) = 1 then cast(0 as {{ dbt.type_numeric() }})
              else sum(period_net_change) over (
@@ -126,5 +97,5 @@ final as (
     from retained_earnings_starter
 )
 
-select DISTINCT *
+select *
 from final
