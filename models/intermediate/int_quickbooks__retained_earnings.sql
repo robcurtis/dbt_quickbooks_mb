@@ -13,7 +13,7 @@ net_income_loss as (
         sum(case when account_class = 'Expense' then period_net_change else 0 end) as expense_net_change,
         sum(case when account_class = 'Expense' then period_net_converted_change else 0 end) as expense_net_converted_change
     from general_ledger_balances
-    group by period_first_day, period_first_day, source_relation
+    group by period_first_day, date_year, source_relation
 ),
 
 manual_retained_earnings as (
