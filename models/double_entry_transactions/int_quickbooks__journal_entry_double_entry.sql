@@ -49,7 +49,16 @@ final as (
         journal_entry_lines.vendor_id,
         journal_entry_lines.amount,
         (journal_entry_lines.amount * coalesce(journal_entries.exchange_rate, 1)) as converted_amount,
-        journal_entry_lines.account_id,
+        coalesce(
+            case 
+                when acct.account_sub_type = 'AccountsReceivable' 
+                and (acct.account_id is null or not acct.is_active)
+                and acct.source_relation = journal_entry_lines.source_relation
+                then default_ar.default_account_id
+                else journal_entry_lines.account_id
+            end,
+            journal_entry_lines.account_id
+        ) as account_id,
         class_id,
         journal_entry_lines.department_id,
         journal_entries.created_at,
