@@ -84,7 +84,6 @@ bundle_income_accounts as (
 {% endif %}
 
 ar_accounts as (
-        ) as next_transaction_date,
     select distinct
         first_value(account_id) over (
             partition by source_relation, currency_id
