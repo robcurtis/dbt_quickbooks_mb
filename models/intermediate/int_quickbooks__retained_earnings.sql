@@ -45,8 +45,8 @@ retained_earnings_starter as (
         nil.date_year as date_year,
         nil.period_first_day,
         nil.period_last_day as period_last_day,
-        (revenue_net_change - expense_net_change + coalesce(mre.manual_re_change, 0)) as period_net_change,
-        (revenue_net_converted_change - expense_net_converted_change + coalesce(mre.manual_re_converted_change, 0)) as period_net_converted_change
+        cast(revenue_net_change - expense_net_change + coalesce(mre.manual_re_change, 0) as {{ dbt_utils.type_numeric() }}) as period_net_change,
+        cast(revenue_net_converted_change - expense_net_converted_change + coalesce(mre.manual_re_converted_change, 0) as {{ dbt_utils.type_numeric() }}) as period_net_converted_change
     from net_income_loss nil
     left join manual_retained_earnings mre
         on nil.period_first_day = mre.period_first_day
@@ -71,7 +71,7 @@ final as (
         period_first_day,
         period_last_day,
         period_net_change,
-        case when extract(month from period_first_day) = 1 then 0
+        case when {{ dbt_utils.date_part('month', period_first_day) }} = 1 then cast(0 as {{ dbt_utils.type_numeric() }})
              else sum(period_net_change) over (
                 partition by source_relation, date_year
                 order by period_first_day
@@ -84,7 +84,7 @@ final as (
             rows between unbounded preceding and current row
         ) as period_ending_balance,
         period_net_converted_change,
-        case when extract(month from period_first_day) = 1 then 0
+        case when {{ dbt_utils.date_part('month', period_first_day) }} = 1 then cast(0 as {{ dbt_utils.type_numeric() }})
              else sum(period_net_converted_change) over (
                 partition by source_relation, date_year
                 order by period_first_day
