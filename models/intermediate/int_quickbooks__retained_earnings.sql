@@ -42,7 +42,7 @@ retained_earnings_starter as (
         cast('balance_sheet' as {{ dbt.type_string() }}) as financial_statement_helper,
         extract(year from nil.period_first_day)::integer as date_year,
         nil.period_first_day,
-        {{ dbt.last_day(nil."period_first_day", "month") }} as period_last_day,
+        {{ dbt.last_day("nil.period_first_day", "month") }} as period_last_day,
         revenue_net_change - expense_net_change + coalesce(mre.manual_re_change, 0) as period_net_change,
         revenue_net_converted_change - expense_net_converted_change + coalesce(mre.manual_re_converted_change, 0) as period_net_converted_change
     from net_income_loss nil
