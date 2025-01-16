@@ -71,7 +71,7 @@ final as (
         period_first_day,
         period_last_day,
         period_net_change,
-        case when date_part('month', period_first_day) = 1 then cast(0 as {{ dbt.type_numeric() }})
+        case when extract(month from period_first_day) = 1 then cast(0 as {{ dbt.type_numeric() }})
              else sum(period_net_change) over (
                 partition by source_relation, date_year
                 order by period_first_day
@@ -84,7 +84,7 @@ final as (
             rows between unbounded preceding and current row
         ) as period_ending_balance,
         period_net_converted_change,
-        case when date_part('month', period_first_day) = 1 then cast(0 as {{ dbt.type_numeric() }})
+        case when extract(month from period_first_day) = 1 then cast(0 as {{ dbt.type_numeric() }})
              else sum(period_net_converted_change) over (
                 partition by source_relation, date_year
                 order by period_first_day
