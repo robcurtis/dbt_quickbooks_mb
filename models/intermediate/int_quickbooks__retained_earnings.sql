@@ -25,7 +25,7 @@ manual_retained_earnings as (
         sum(period_net_converted_change) as manual_re_converted_change
     from general_ledger_balances
     where account_sub_type = 'RetainedEarnings'
-    group by 1, 2, 3
+    group by period_first_day, date_year, source_relation
 ),
 
 retained_earnings_starter as (
