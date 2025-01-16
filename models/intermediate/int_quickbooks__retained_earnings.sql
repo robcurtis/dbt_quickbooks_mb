@@ -8,7 +8,6 @@ net_income_loss as (
         period_first_day,
         (date_trunc('month', period_first_day) + interval '1 month' - interval '1 day') as period_last_day,
         date_year,
-        to_char(period_first_day - (extract(doy from period_first_day) - 1) * interval '1 day', 'DD-MM-YYYY') as fiscal_year,
         source_relation,
         account_id,
         account_number,
@@ -28,6 +27,7 @@ net_income_loss as (
     from general_ledger_balances
     group by 
         period_first_day,
+        (date_trunc('month', period_first_day) + interval '1 month' - interval '1 day'),
         date_year,
         source_relation,
         fiscal_year,
