@@ -6,14 +6,42 @@ with general_ledger_balances as (
 net_income_loss as (
     select
         period_first_day,
+        (date_trunc('month', period_first_day) + interval '1 month' - interval '1 day') as period_last_day,
         date_year,
+        to_char(period_first_day - (extract(doy from period_first_day) - 1) * interval '1 day', 'DD-MM-YYYY') as fiscal_year,
         source_relation,
+        account_id,
+        account_number,
+        account_name,
+        is_sub_account,
+        parent_account_number,
+        parent_account_name,
+        account_type,
+        account_sub_type,
+        account_class,
+        class_id,
+        financial_statement_helper,
         sum(case when account_class = 'Revenue' then period_net_change else 0 end) as revenue_net_change,
         sum(case when account_class = 'Revenue' then period_net_converted_change else 0 end) as revenue_net_converted_change,
         sum(case when account_class = 'Expense' then period_net_change else 0 end) as expense_net_change,
         sum(case when account_class = 'Expense' then period_net_converted_change else 0 end) as expense_net_converted_change
     from general_ledger_balances
-    group by period_first_day, date_year, source_relation
+    group by 
+        period_first_day,
+        date_year,
+        source_relation,
+        fiscal_year,
+        account_id,
+        account_number,
+        account_name,
+        is_sub_account,
+        parent_account_number,
+        parent_account_name,
+        account_type,
+        account_sub_type,
+        account_class,
+        class_id,
+        financial_statement_helper
 ),
 
 manual_retained_earnings as (
