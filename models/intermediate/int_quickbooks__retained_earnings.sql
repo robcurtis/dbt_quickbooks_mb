@@ -40,9 +40,9 @@ retained_earnings_starter as (
         cast('Equity' as {{ dbt.type_string() }}) as account_class,
         cast(null as {{ dbt.type_string() }}) as class_id,
         cast('balance_sheet' as {{ dbt.type_string() }}) as financial_statement_helper,
-        extract(year from nil.period_first_day)::integer as date_year,
+        cast({{ dbt.date_trunc("year", "nil.period_first_day") }} as date) as date_year,
         nil.period_first_day,
-        {{ dbt.last_day("nil.period_first_day", "month") }} as period_last_day,
+        cast({{ dbt.last_day("nil.period_first_day", "month") }} as date) as period_last_day,
         revenue_net_change - expense_net_change + coalesce(mre.manual_re_change, 0) as period_net_change,
         revenue_net_converted_change - expense_net_converted_change + coalesce(mre.manual_re_converted_change, 0) as period_net_converted_change
     from net_income_loss nil
