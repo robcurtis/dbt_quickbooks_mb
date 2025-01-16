@@ -42,6 +42,7 @@ retained_earnings_starter as (
         cast('balance_sheet' as {{ dbt.type_string() }}) as financial_statement_helper,
         extract(year from nil.period_first_day)::integer as date_year,
         nil.period_first_day,
+        {{ dbt.last_day(nil."period_first_day", "month") }} as period_last_day,
         cast(revenue_net_change - expense_net_change + coalesce(mre.manual_re_change, 0) as {{ dbt.type_numeric() }}) as period_net_change,
         cast(revenue_net_converted_change - expense_net_converted_change + coalesce(mre.manual_re_converted_change, 0) as {{ dbt.type_numeric() }}) as period_net_converted_change
     from net_income_loss nil
@@ -66,6 +67,7 @@ final as (
         financial_statement_helper,
         date_year,
         period_first_day,
+        period_last_day,
         period_net_change,
         case when extract(month from period_first_day) = 1 then cast(0 as {{ dbt.type_numeric() }})
              else sum(period_net_change) over (
