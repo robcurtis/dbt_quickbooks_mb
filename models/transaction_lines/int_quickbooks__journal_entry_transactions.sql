@@ -41,16 +41,7 @@ final as (
         journal_entries.doc_number,
         'journal_entry' as transaction_type,
         journal_entries.transaction_date,
-        coalesce(
-            case 
-                when acct.account_sub_type = 'AccountsReceivable' 
-                and (acct.account_id is null or not acct.is_active)
-                and acct.source_relation = journal_entry_lines.source_relation
-                then default_ar.default_account_id
-                else journal_entry_lines.account_id
-            end,
-            journal_entry_lines.account_id
-        ) as account_id,
+        journal_entry_lines.account_id,
         journal_entry_lines.class_id,
         journal_entry_lines.department_id,
         journal_entry_lines.customer_id,
