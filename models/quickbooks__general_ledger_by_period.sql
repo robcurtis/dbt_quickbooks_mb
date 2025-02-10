@@ -2,9 +2,10 @@ with general_ledger_balances as (
 
     select *
     from {{ ref('int_quickbooks__general_ledger_balances') }}
+    where NOT (account_number = '3900' and financial_statement_helper = 'balance_sheet') -- Replace with the calculated retained earnings
 ),
 
-retained_earnings as (
+calculated_retained_earnings as (
 
     select *
     from {{ ref('int_quickbooks__retained_earnings') }}
@@ -31,7 +32,7 @@ balances_earnings_unioned as (
     union all 
 
     select *
-    from retained_earnings
+    from calculated_retained_earnings
 ), 
 
 final as (
