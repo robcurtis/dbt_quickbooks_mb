@@ -146,12 +146,12 @@ final as (
         br.period_first_day,
         br.period_last_day,
         coalesce(mni.net_income_change, 0) as period_net_change,
-        coalesce(mni.net_income_converted_change, 0) as period_net_converted_change,
         coalesce(mcni.cumulative_net_income_change - mni.net_income_change, 0) as period_beginning_balance,
         coalesce(mcni.cumulative_net_income_change, 0) as period_ending_balance,
+        coalesce(mni.net_income_converted_change, 0) as period_net_converted_change,
         coalesce(mcni.cumulative_net_income_converted_change - mni.net_income_converted_change, 0) as period_beginning_converted_balance,
-        coalesce(mcni.cumulative_net_income_converted_change, 0) as period_ending_converted_balance,
-        1 as sort_order
+        coalesce(mcni.cumulative_net_income_converted_change, 0) as period_ending_converted_balance
+
     from base_records br
     left join monthly_net_income mni
         on br.source_relation = mni.source_relation
@@ -182,12 +182,11 @@ final as (
         br.period_first_day,
         br.period_last_day,
         0 as period_net_change,
-        0 as period_net_converted_change,
         coalesce(br.cumulative_retained_earnings, 0) as period_beginning_balance,
         coalesce(br.cumulative_retained_earnings, 0) as period_ending_balance,
+        0 as period_net_converted_change,
         coalesce(br.cumulative_retained_earnings_converted, 0) as period_beginning_converted_balance,
-        coalesce(br.cumulative_retained_earnings_converted, 0) as period_ending_converted_balance,
-        2 as sort_order
+        coalesce(br.cumulative_retained_earnings_converted, 0) as period_ending_converted_balance
     from base_records br
     inner join retained_earnings_accounts rea 
         on br.source_relation = rea.source_relation
@@ -195,4 +194,4 @@ final as (
 
 select *
 from final
-order by source_relation, period_first_day, sort_order
+order by source_relation, period_first_day
