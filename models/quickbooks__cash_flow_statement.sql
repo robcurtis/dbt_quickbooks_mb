@@ -2,10 +2,11 @@
     materialized='incremental',
     unique_key='account_unique_id',
     incremental_strategy='delete+insert',
-    post_hook=[
-      "ALTER TABLE {{ this }} DROP CONSTRAINT IF EXISTS pk_{{ this.identifier }}",
-      "ALTER TABLE {{ this }} ADD CONSTRAINT pk_{{ this.identifier }} PRIMARY KEY (account_unique_id)"
-    ]
+    post_hook=after_commit("
+      ALTER TABLE {{ this }} DROP CONSTRAINT IF EXISTS pk_{{ this.identifier }};
+      ALTER TABLE {{ this }} ADD CONSTRAINT pk_{{ this.identifier }} PRIMARY KEY (account_unique_id)
+    "),
+    on_schema_change='sync_all_columns'
 ) }}
 
 with cash_flow_classifications as (
