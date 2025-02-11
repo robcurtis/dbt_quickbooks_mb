@@ -5,7 +5,7 @@
     unique_key=dbt_utils.generate_surrogate_key(['transaction_id', 'source_relation']),
     incremental_strategy='delete+insert',
     post_hook=[
-      "ALTER TABLE {{ this }} ADD CONSTRAINT pk_{{ this.identifier }} PRIMARY KEY (transaction_id, source_relation)"
+      "ALTER TABLE {{ this }} ADD CONSTRAINT IF NOT EXISTS pk_{{ this.identifier }} PRIMARY KEY (transaction_id, source_relation)"
     ]
 ) }}
 

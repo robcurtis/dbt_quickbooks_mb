@@ -1,9 +1,9 @@
 {{ config(
     materialized='incremental',
-    unique_key=dbt_utils.generate_surrogate_key(['transaction_id', 'source_relation', 'transaction_line_id', 'index']),
+    unique_key=dbt_utils.generate_surrogate_key(['unique_id']),
     incremental_strategy='delete+insert',
     post_hook=[
-      "ALTER TABLE {{ this }} ADD CONSTRAINT pk_{{ this.identifier }} PRIMARY KEY (transaction_id, source_relation, transaction_line_id, index)"
+      "ALTER TABLE {{ this }} ADD CONSTRAINT IF NOT EXISTS pk_{{ this.identifier }} PRIMARY KEY (unique_id)"
     ]
 ) }}
 
@@ -146,8 +146,7 @@ final as (select *,
 source_data as (
     select 
         *,
-        {{ dbt.current_timestamp() }} as dbt_updated_at,
-        {{ dbt_utils.generate_surrogate_key(['transaction_id', 'source_relation', 'transaction_line_id', 'index']) }} as dbt_row_id
+        {{ dbt.current_timestamp() }} as dbt_updated_at
     from final
 )
 
