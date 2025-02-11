@@ -150,8 +150,19 @@ source_data as (
     from final
 )
 
+{% if is_incremental() %}
+, last_update as (
+    select max(dbt_updated_at) as max_dbt_updated_at 
+    from {{ this }}
+)
+
+select source_data.*
+from source_data, last_update
+where source_data.dbt_updated_at >= last_update.max_dbt_updated_at
+
+{% else %}
+
 select *
 from source_data
-{% if is_incremental() %}
-where dbt_updated_at >= (select max(dbt_updated_at) from {{ this }})
+
 {% endif %}
