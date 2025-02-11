@@ -7,7 +7,8 @@
     post_hook=after_commit("
       ALTER TABLE {{ this }} DROP CONSTRAINT IF EXISTS pk_{{ this.identifier }};
       ALTER TABLE {{ this }} ADD CONSTRAINT pk_{{ this.identifier }} PRIMARY KEY (dbt_row_id)
-    ")
+    "),
+    on_schema_change='sync_all_columns'
 ) }}
 
 with bill_join as (
