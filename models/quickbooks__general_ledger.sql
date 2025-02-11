@@ -2,11 +2,10 @@
     materialized='incremental',
     unique_key='unique_id',
     incremental_strategy='delete+insert',
-    post_hook=after_commit("
-      ALTER TABLE {{ this }} DROP CONSTRAINT IF EXISTS pk_{{ this.identifier }};
-      ALTER TABLE {{ this }} ADD CONSTRAINT pk_{{ this.identifier }} PRIMARY KEY (unique_id)
-    "),
-    on_schema_change='sync_all_columns'
+    post_hook=[
+      "ALTER TABLE {{ this }} DROP CONSTRAINT IF EXISTS pk_{{ this.identifier }}",
+      "ALTER TABLE {{ this }} ADD CONSTRAINT IF NOT EXISTS pk_{{ this.identifier }} PRIMARY KEY (unique_id)"
+    ]
 ) }}
 
 with accounts as (
