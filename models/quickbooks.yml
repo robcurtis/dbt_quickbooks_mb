@@ -199,6 +199,10 @@ models:
         description: The first date a payment was provided for the bill or invoice
       - name: recent_payment_date
         description: The last date a payment was provided for the bill or invoice.
+      - name: dbt_row_id
+        description: Surrogate key for the bill or invoice.
+      - name: dbt_updated_at
+        description: Timestamp of when the bill or invoice was last updated.
 
   - name: quickbooks__cash_flow_statement
     description: "{{ doc('cash_flow_statement_table') }}" 
@@ -248,6 +252,8 @@ models:
         description: The net cash change from the beginning to the end of the period for every cash flow account line.
       - name: cash_converted_net_period
         description: The net cash change, converted with exchange rates applied if available, from the beginning to the end of the period for every cash flow account line.
+      - name: dbt_updated_at
+        description: Timestamp of when the cash flow statement account line was last updated.
 
   - name: quickbooks__expenses_sales_enhanced
     description: "{{ doc('expenses_sales_enhanced_table') }}" 
@@ -313,6 +319,10 @@ models:
         description: Total monetary amount of either the expense or sale.
       - name: total_converted_amount
         description: Total monetary amount, converted with exchange rates applied if available, of either the expense or sale.
+      - name: dbt_row_id
+        description: Surrogate key for the expense or sale line item.
+      - name: dbt_updated_at
+        description: Timestamp of when the expense or sale line item was last updated.
 
   - name: quickbooks__general_ledger
     description: "{{ doc('general_ledger_table') }}"
@@ -382,6 +392,8 @@ models:
         description: The running balance of the account by each individual day.
       - name: running_converted_balance
         description: The running balance of the account by each individual day, --converted with exchange rates applied if available.
+      - name: dbt_updated_at
+        description: Timestamp of when the general ledger line was last updated.
 
   - name: quickbooks__general_ledger_by_period
     description: "{{ doc('general_ledger_by_period_table') }}"
@@ -437,6 +449,10 @@ models:
         description: Sum of all transaction line adjusted_balances of the account for the period, converted with exchange rates applied if available.
       - name: account_ordinal
         description: "{{ doc('account_ordinal') }}"
+      - name: dbt_row_id
+        description: Surrogate key for the general ledger by period line.
+      - name: dbt_updated_at
+        description: Timestamp of when the general ledger by period line was last updated.
 
   - name: quickbooks__profit_and_loss
     description: "{{ doc('profit_and_loss_table') }}"
@@ -482,7 +498,11 @@ models:
         description: The total period net change for the period, converted with exchange rates applied if available.
       - name: account_ordinal
         description: "{{ doc('account_ordinal') }}"
-  
+      - name: dbt_row_id
+        description: Surrogate key for the profit and loss line.
+      - name: dbt_updated_at
+        description: Timestamp of when the profit and loss line was last updated.
+
   - name: quickbooks__balance_sheet
     description: >
       Table containing all asset, liability, and equity account classes by calendar year and month enriched with account type, class, and parent information.
@@ -528,3 +548,7 @@ models:
         description: The total ending period balance, converted with exchange rates applied if available,
       - name: account_ordinal
         description: "{{ doc('account_ordinal') }}"
+      - name: dbt_row_id
+        description: Surrogate key for the balance sheet line.
+      - name: dbt_updated_at
+        description: Timestamp of when the balance sheet line was last updated.
