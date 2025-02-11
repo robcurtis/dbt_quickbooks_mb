@@ -3,16 +3,15 @@
     unique_key=['dbt_row_id'],
     incremental_strategy='delete+insert',
     post_hook=[
-      "ALTER TABLE {{ this }} ADD CONSTRAINT pk_{{ this.identifier }} PRIMARY KEY (dbt_row_id)"
+      "ALTER TABLE {{ this }} ADD CONSTRAINT pk_{{ this.identifier }} PRIMARY KEY (account_id, class_id, source_relation, calendar_date)"
     ]
 ) }}
 
 with general_ledger_by_period as (
-
     select *
     from {{ ref('quickbooks__general_ledger_by_period') }}
     where financial_statement_helper = 'income_statement'
-),  
+),
 
 final as (
     select
