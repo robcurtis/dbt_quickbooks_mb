@@ -87,7 +87,7 @@ source_data as (
 {% if is_incremental() %}
 , last_update as (
     select max(dbt_updated_at) as max_dbt_updated_at 
-    from {{ this }}
+    from source_data
 )
 
 select source_data.*
