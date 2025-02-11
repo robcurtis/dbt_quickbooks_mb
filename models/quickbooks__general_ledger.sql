@@ -1,3 +1,12 @@
+{{ config(
+    materialized='incremental',
+    unique_key=['unique_id'],
+    incremental_strategy='delete+insert',
+    post_hook=[
+      "ALTER TABLE {{ this }} ADD CONSTRAINT pk_{{ this.identifier }} PRIMARY KEY (unique_id)"
+    ]
+) }}
+
 with accounts as (
     select * from {{ ref('stg_quickbooks__account') }}
 ),
@@ -132,7 +141,17 @@ final as (select *,
                  sum(adjusted_converted_amount) over (partition by account_id, class_id, source_relation
                      order by source_relation, transaction_date, account_id, class_id rows unbounded preceding) as running_converted_balance
           from stgd_general_ledger
+),
+
+source_data as (
+    select 
+        *,
+        {{ dbt.current_timestamp() }} as dbt_updated_at
+    from final
 )
 
 select *
-from final
+from source_data
+{% if is_incremental() %}
+where dbt_updated_at >= (select max(dbt_updated_at) from {{ this }})
+{% endif %}

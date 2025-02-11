@@ -1,9 +1,9 @@
 {{ config(
     materialized='incremental',
-    unique_key=['account_id', 'class_id', 'source_relation', 'calendar_date'],
+    unique_key=['dbt_row_id'],
     incremental_strategy='delete+insert',
     post_hook=[
-      "ALTER TABLE {{ this }} ADD CONSTRAINT pk_{{ this.identifier }} PRIMARY KEY (account_id, class_id, source_relation, calendar_date)"
+      "ALTER TABLE {{ this }} ADD CONSTRAINT pk_{{ this.identifier }} PRIMARY KEY (dbt_row_id)"
     ]
 ) }}
 
@@ -34,7 +34,18 @@ final as (
         period_net_converted_change as converted_amount,
         account_ordinal
     from general_ledger_by_period
+),
+
+source_data as (
+    select 
+        *,
+        {{ dbt_utils.generate_surrogate_key(['account_id', 'class_id', 'source_relation', 'calendar_date']) }} as dbt_row_id,
+        {{ dbt.current_timestamp() }} as dbt_updated_at
+    from final
 )
 
 select *
-from final
+from source_data
+{% if is_incremental() %}
+where dbt_updated_at >= (select max(dbt_updated_at) from {{ this }})
+{% endif %}

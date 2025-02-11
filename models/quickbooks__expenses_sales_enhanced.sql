@@ -1,9 +1,9 @@
 {{ config(
     materialized='incremental',
-    unique_key=['transaction_id', 'source_relation', 'transaction_line_id'],
+    unique_key=['dbt_row_id'],
     incremental_strategy='delete+insert',
     post_hook=[
-      "ALTER TABLE {{ this }} ADD CONSTRAINT pk_{{ this.identifier }} PRIMARY KEY (transaction_id, source_relation, transaction_line_id)"
+      "ALTER TABLE {{ this }} ADD CONSTRAINT pk_{{ this.identifier }} PRIMARY KEY (dbt_row_id)"
     ]
 ) }}
 
@@ -32,7 +32,18 @@ final as (
     select *
     from sales
     {% endif %}
+),
+
+source_data as (
+    select 
+        *,
+        {{ dbt_utils.generate_surrogate_key(['transaction_id', 'source_relation', 'transaction_line_id', 'item_id']) }} as dbt_row_id,
+        {{ dbt.current_timestamp() }} as dbt_updated_at
+    from final
 )
 
 select *
-from final
+from source_data
+{% if is_incremental() %}
+where dbt_updated_at >= (select max(dbt_updated_at) from {{ this }})
+{% endif %}
