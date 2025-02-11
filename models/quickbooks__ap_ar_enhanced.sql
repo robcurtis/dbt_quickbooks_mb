@@ -1,5 +1,13 @@
 --To disable this model, set the using_bill and using_invoice variable within your dbt_project.yml file to False.
-{{ config(enabled=var('using_bill', True) and var('using_invoice', True) and var('using_payment', True)) }}
+{{ config(
+    enabled=var('using_bill', True) and var('using_invoice', True) and var('using_payment', True),
+    materialized='incremental',
+    unique_key=['transaction_id', 'source_relation', 'estimate_id'],
+    incremental_strategy='delete+insert',
+    post_hook=[
+      "ALTER TABLE {{ this }} ADD CONSTRAINT pk_{{ this.identifier }} PRIMARY KEY (transaction_id, source_relation, estimate_id)"
+    ]
+) }}
 
 with bill_join as (
 
