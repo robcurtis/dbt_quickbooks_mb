@@ -2,9 +2,10 @@
     materialized='incremental',
     unique_key='dbt_row_id',
     incremental_strategy='delete+insert',
-    post_hook=[
-      "ALTER TABLE {{ this }} ADD CONSTRAINT pk_{{ this.identifier }} PRIMARY KEY (dbt_row_id)"
-    ]
+    post_hook=after_commit(`
+      ALTER TABLE {{ this }} DROP CONSTRAINT IF EXISTS pk_{{ this.identifier }};
+      ALTER TABLE {{ this }} ADD CONSTRAINT pk_{{ this.identifier }} PRIMARY KEY (dbt_row_id)
+    `)
 ) }}
 
 with expenses as (
