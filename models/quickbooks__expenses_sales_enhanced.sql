@@ -1,6 +1,6 @@
 {{ config(
     materialized='incremental',
-    unique_key=['dbt_row_id'],
+    unique_key=dbt_utils.generate_surrogate_key(['transaction_id', 'source_relation', 'transaction_line_id', 'item_id']),
     incremental_strategy='delete+insert',
     post_hook=[
       "ALTER TABLE {{ this }} ADD CONSTRAINT pk_{{ this.identifier }} PRIMARY KEY (transaction_id, source_relation, transaction_line_id, item_id)"
