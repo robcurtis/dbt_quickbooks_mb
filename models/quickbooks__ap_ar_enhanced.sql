@@ -2,10 +2,10 @@
 {{ config(
     enabled=var('using_bill', True) and var('using_invoice', True) and var('using_payment', True),
     materialized='incremental',
-    unique_key=dbt_utils.generate_surrogate_key(['transaction_id', 'source_relation', 'estimate_id']),
+    unique_key=dbt_utils.generate_surrogate_key(['transaction_id', 'source_relation']),
     incremental_strategy='delete+insert',
     post_hook=[
-      "ALTER TABLE {{ this }} ADD CONSTRAINT pk_{{ this.identifier }} PRIMARY KEY (transaction_id, source_relation, estimate_id)"
+      "ALTER TABLE {{ this }} ADD CONSTRAINT pk_{{ this.identifier }} PRIMARY KEY (transaction_id, source_relation)"
     ]
 ) }}
 
@@ -183,7 +183,7 @@ final as (
 source_data as (
     select 
         *,
-        {{ dbt_utils.generate_surrogate_key(['transaction_id', 'source_relation', 'estimate_id']) }} as dbt_row_id,
+        {{ dbt_utils.generate_surrogate_key(['transaction_id', 'source_relation']) }} as dbt_row_id,
         {{ dbt.current_timestamp() }} as dbt_updated_at
     from final
 )

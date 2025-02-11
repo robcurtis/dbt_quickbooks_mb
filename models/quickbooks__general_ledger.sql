@@ -1,9 +1,9 @@
 {{ config(
     materialized='incremental',
-    unique_key=['unique_id'],
+    unique_key=dbt_utils.generate_surrogate_key(['transaction_id', 'source_relation', 'transaction_line_id', 'index']),
     incremental_strategy='delete+insert',
     post_hook=[
-      "ALTER TABLE {{ this }} ADD CONSTRAINT pk_{{ this.identifier }} PRIMARY KEY (unique_id)"
+      "ALTER TABLE {{ this }} ADD CONSTRAINT pk_{{ this.identifier }} PRIMARY KEY (transaction_id, source_relation, transaction_line_id, index)"
     ]
 ) }}
 
@@ -95,7 +95,7 @@ select
         THEN dar.is_sub_account
         ELSE gl.is_sub_account
     END as is_sub_account,
-    CASE WHEN gl.transaction_date <= arc.cutover_date
+    CASE when gl.transaction_date <= arc.cutover_date
         THEN dar.parent_account_number
         ELSE gl.parent_account_number
     END as parent_account_number,
@@ -146,7 +146,8 @@ final as (select *,
 source_data as (
     select 
         *,
-        {{ dbt.current_timestamp() }} as dbt_updated_at
+        {{ dbt.current_timestamp() }} as dbt_updated_at,
+        {{ dbt_utils.generate_surrogate_key(['transaction_id', 'source_relation', 'transaction_line_id', 'index']) }} as dbt_row_id
     from final
 )
 
