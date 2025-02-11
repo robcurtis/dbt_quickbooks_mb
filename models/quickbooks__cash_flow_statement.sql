@@ -34,10 +34,10 @@ source_data as (
     from final
 )
 
-{% if is_incremental() %}
+{% if is_incremental() and this.is_table_type %}
 , last_update as (
     select max(dbt_updated_at) as max_dbt_updated_at 
-    from source_data
+    from {{ this }}
 )
 
 select source_data.*
@@ -50,4 +50,3 @@ select *
 from source_data
 
 {% endif %}
-
