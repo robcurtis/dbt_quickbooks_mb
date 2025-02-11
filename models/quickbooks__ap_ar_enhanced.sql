@@ -2,7 +2,7 @@
 {{ config(
     enabled=var('using_bill', True) and var('using_invoice', True) and var('using_payment', True),
     materialized='incremental',
-    unique_key=['dbt_row_id'],
+    unique_key='dbt_row_id',
     incremental_strategy='delete+insert',
     post_hook=[
       "ALTER TABLE {{ this }} ADD CONSTRAINT pk_{{ this.identifier }} PRIMARY KEY (dbt_row_id)"

@@ -1,10 +1,9 @@
 {{ config(
     materialized='incremental',
-    unique_key=['unique_id'],
+    unique_key=dbt_utils.generate_surrogate_key(['unique_id']),
     incremental_strategy='delete+insert',
     post_hook=[
-      "ALTER TABLE {{ this }} DROP CONSTRAINT IF EXISTS pk_{{ this.identifier }}",
-      "ALTER TABLE {{ this }} ADD CONSTRAINT pk_{{ this.identifier }} PRIMARY KEY (unique_id)"
+      "ALTER TABLE {{ this }} ADD CONSTRAINT IF NOT EXISTS pk_{{ this.identifier }} PRIMARY KEY (unique_id)"
     ]
 ) }}
 
