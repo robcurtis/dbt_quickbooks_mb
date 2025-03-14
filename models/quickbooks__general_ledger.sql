@@ -79,7 +79,7 @@ select
     CASE
         WHEN arc.cutover_date IS NOT NULL
         AND gl.transaction_date IS NOT NULL
-        AND gl.transaction_date < arc.cutover_date
+        AND gl.transaction_date <= arc.cutover_date
         THEN dar.account_id
         ELSE gl.account_id
     END as account_id,
@@ -88,49 +88,49 @@ select
     CASE
         WHEN arc.cutover_date IS NOT NULL
         AND gl.transaction_date IS NOT NULL
-        AND gl.transaction_date < arc.cutover_date
+        AND gl.transaction_date <= arc.cutover_date
         THEN dar.account_number
         ELSE gl.account_number
     END as account_number,
     CASE
         WHEN arc.cutover_date IS NOT NULL
         AND gl.transaction_date IS NOT NULL
-        AND gl.transaction_date < arc.cutover_date
+        AND gl.transaction_date <= arc.cutover_date
         THEN dar.name
         ELSE gl.account_name
     END as account_name,
     CASE
         WHEN arc.cutover_date IS NOT NULL
         AND gl.transaction_date IS NOT NULL
-        AND gl.transaction_date < arc.cutover_date
+        AND gl.transaction_date <= arc.cutover_date
         THEN dar.is_sub_account
         ELSE gl.is_sub_account
     END as is_sub_account,
     CASE
         WHEN arc.cutover_date IS NOT NULL
         AND gl.transaction_date IS NOT NULL
-        AND gl.transaction_date < arc.cutover_date
+        AND gl.transaction_date <= arc.cutover_date
         THEN dar.parent_account_number
         ELSE gl.parent_account_number
     END as parent_account_number,
     CASE
         WHEN arc.cutover_date IS NOT NULL
         AND gl.transaction_date IS NOT NULL
-        AND gl.transaction_date < arc.cutover_date
+        AND gl.transaction_date <= arc.cutover_date
         THEN dar.parent_account_name
         ELSE gl.parent_account_name
     END as parent_account_name,
     CASE
         WHEN arc.cutover_date IS NOT NULL
         AND gl.transaction_date IS NOT NULL
-        AND gl.transaction_date < arc.cutover_date
+        AND gl.transaction_date <= arc.cutover_date
         THEN dar.account_type
         ELSE gl.account_type
     END as account_type,
     CASE
         WHEN arc.cutover_date IS NOT NULL
         AND gl.transaction_date IS NOT NULL
-        AND gl.transaction_date < arc.cutover_date
+        AND gl.transaction_date <= arc.cutover_date
         THEN dar.account_sub_type
         ELSE gl.account_sub_type
     END as account_sub_type,
@@ -138,14 +138,14 @@ select
     CASE
         WHEN arc.cutover_date IS NOT NULL
         AND gl.transaction_date IS NOT NULL
-        AND gl.transaction_date < arc.cutover_date
+        AND gl.transaction_date <= arc.cutover_date
         THEN dar.balance
         ELSE gl.account_current_balance
     END as account_current_balance,
     CASE
         WHEN arc.cutover_date IS NOT NULL
         AND gl.transaction_date IS NOT NULL
-        AND gl.transaction_date < arc.cutover_date
+        AND gl.transaction_date <= arc.cutover_date
         THEN dar.classification
         ELSE gl.account_class
     END as account_class,
@@ -154,7 +154,7 @@ select
     CASE
         WHEN arc.cutover_date IS NOT NULL
         AND gl.transaction_date IS NOT NULL
-        AND gl.transaction_date < arc.cutover_date
+        AND gl.transaction_date <= arc.cutover_date
         THEN dar.transaction_type
         ELSE gl.account_transaction_type
     END as account_transaction_type,
