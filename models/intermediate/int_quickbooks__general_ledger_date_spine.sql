@@ -142,7 +142,7 @@ final as (
             WHEN arc.cutover_date IS NOT NULL
             AND general_ledger.transaction_date IS NOT NULL
             AND general_ledger.transaction_date <= arc.cutover_date
-            THEN dar.account_name
+            THEN dar.name
             ELSE general_ledger.account_name
         END as account_name,
         CASE
