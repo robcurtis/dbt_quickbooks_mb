@@ -94,6 +94,10 @@ default_ar_account as (
         and not is_sub_account
 ),
 
+inactive_dates as (
+    select * from {{ ref('int_quickbooks__ar_inactive_dates') }}
+),
+
 ar_cutover_date_pre_matrix as (
 select
     case
@@ -191,7 +195,7 @@ final as (
         date_spine.period_index
     from general_ledger
     left join ar_cutover_date_matrix arc on general_ledger.source_relation = arc.source_relation and general_ledger.account_id = arc.account_id
-left join default_ar_account dar on general_ledger.source_relation = dar.source_relation
+    left join default_ar_account dar on general_ledger.source_relation = dar.source_relation
 
     cross join date_spine
 )
