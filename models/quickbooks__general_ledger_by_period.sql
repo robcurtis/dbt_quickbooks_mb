@@ -81,7 +81,7 @@ final as (
 source_data as (
     select 
         *,
-        {{ dbt_utils.generate_surrogate_key(['account_id', 'class_id', 'source_relation', 'period_first_day']) }} as dbt_row_id,
+        {{ dbt_utils.generate_surrogate_key(['account_id', 'class_id', 'source_relation', 'period_first_day', 'financial_statement_helper']) }} as dbt_row_id,
         {{ dbt.current_timestamp() }} as dbt_updated_at
     from final
 )
