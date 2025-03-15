@@ -70,7 +70,7 @@ accounts as (
     select * from {{ ref('stg_quickbooks__account') }}
 ),
 
-accounts_classification as (
+account_classifications as (
     select * from {{ ref('int_quickbooks__account_classifications') }}
 ),
 
