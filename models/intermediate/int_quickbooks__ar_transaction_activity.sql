@@ -8,9 +8,15 @@ account_classifications as (
 
 ar_accounts as (
     select 
-        a.*,
+        a.account_id,
+        a.source_relation,
+        ac.account_number,
+        ac.name as account_name,
+        ac.is_sub_account,
         ac.parent_account_number,
-        ac.parent_account_name
+        ac.parent_account_name,
+        ac.account_type,
+        ac.account_sub_type
     from accounts a
     inner join account_classifications ac
         on a.account_id = ac.account_id
