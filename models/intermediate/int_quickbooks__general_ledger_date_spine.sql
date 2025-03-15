@@ -74,6 +74,18 @@ accounts_classification as (
     select * from {{ ref('int_quickbooks__account_classifications') }}
 ),
 
+ar_accounts as (
+    select 
+        a.*,
+        ac.parent_account_number,
+        ac.parent_account_name
+    from accounts a
+    inner join account_classifications ac
+        on a.account_id = ac.account_id
+        and a.source_relation = ac.source_relation
+    where ac.account_sub_type = 'AccountsReceivable'
+),
+
 ar_cutover_date_pre_matrix as (
     select
         a.account_id,
@@ -85,7 +97,7 @@ ar_cutover_date_pre_matrix as (
         a.parent_account_name,
         i.first_inactive_date as cutover_date,
         i.last_active_date
-    from {{ ref('stg_quickbooks__account') }} a
+    from ar_accounts a
     left join {{ ref('int_quickbooks__ar_inactive_dates') }} i
         on a.account_id = i.account_id
         and a.source_relation = i.source_relation

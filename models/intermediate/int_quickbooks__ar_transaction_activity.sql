@@ -1,14 +1,21 @@
-with ar_accounts as (
+with accounts as (
+    select * from {{ ref('stg_quickbooks__account') }}
+),
+
+account_classifications as (
+    select * from {{ ref('int_quickbooks__account_classifications') }}
+),
+
+ar_accounts as (
     select 
-        account_id,
-        source_relation,
-        account_number,
-        account_name,
-        is_sub_account,
-        parent_account_number,
-        parent_account_name
-    from {{ ref('stg_quickbooks__account') }}
-    where account_sub_type = 'AccountsReceivable'
+        a.*,
+        ac.parent_account_number,
+        ac.parent_account_name
+    from accounts a
+    inner join account_classifications ac
+        on a.account_id = ac.account_id
+        and a.source_relation = ac.source_relation
+    where ac.account_sub_type = 'AccountsReceivable'
 ),
 
 transaction_activity as (
