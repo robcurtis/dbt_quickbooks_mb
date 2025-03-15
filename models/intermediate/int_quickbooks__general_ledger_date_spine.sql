@@ -66,53 +66,6 @@ date_spine as (
     from spine
 ),
 
-accounts as (
-    select * from {{ ref('stg_quickbooks__account') }}
-),
-
-account_classifications as (
-    select * from {{ ref('int_quickbooks__account_classifications') }}
-),
-
-ar_accounts as (
-    select 
-        a.*,
-        ac.parent_account_number,
-        ac.parent_account_name
-    from accounts a
-    inner join account_classifications ac
-        on a.account_id = ac.account_id
-        and a.source_relation = ac.source_relation
-    where ac.account_sub_type = 'AccountsReceivable'
-),
-
-ar_cutover_date_pre_matrix as (
-    select
-        a.account_id,
-        a.source_relation,
-        a.account_number,
-        a.account_name,
-        a.is_sub_account,
-        a.parent_account_number,
-        a.parent_account_name,
-        i.first_inactive_date as cutover_date,
-        i.last_active_date
-    from ar_accounts a
-    left join {{ ref('int_quickbooks__ar_inactive_dates') }} i
-        on a.account_id = i.account_id
-        and a.source_relation = i.source_relation
-    where a.account_sub_type = 'AccountsReceivable'
-),
-
-ar_cutover_date_matrix as (
-    select * 
-    from ar_cutover_date_pre_matrix a
-    where a.is_active 
-    and a.is_sub_account 
-    and a.cutover_date is not null
-    order by a.source_relation, a.account_number
-),
-
 final as (
     select distinct
         general_ledger.account_id,
@@ -132,8 +85,6 @@ final as (
         date_spine.period_last_day,
         date_spine.period_index
     from general_ledger
-    left join ar_cutover_date_matrix arc on general_ledger.source_relation = arc.source_relation and general_ledger.account_id = arc.account_id
-    left join default_ar_account dar on general_ledger.source_relation = dar.source_relation
 
     cross join date_spine
 )

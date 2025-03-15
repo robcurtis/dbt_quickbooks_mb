@@ -13,7 +13,7 @@ with accounts as (
     select * from {{ ref('stg_quickbooks__account') }}
 ),
 
-accounts_classification as (
+account_classifications as (
     select * from {{ ref('int_quickbooks__account_classifications') }}
 ),
 
@@ -31,37 +31,50 @@ default_ar_account as (
         where account_sub_type = 'AccountsReceivable'
         and is_active
         and not is_sub_account) t1
-    left join accounts_classification a on t1.source_relation = a.source_relation and t1.default_account_id = a.account_id
+    left join account_classifications a on t1.source_relation = a.source_relation and t1.default_account_id = a.account_id
     where account_sub_type = 'AccountsReceivable'
         and is_active
         and not is_sub_account
 ),
 
-inactive_dates as (
-    select * from {{ ref('int_quickbooks__ar_inactive_dates') }}
+ar_accounts as (
+    select 
+        a.*,
+        ac.parent_account_number,
+        ac.parent_account_name
+    from accounts a
+    inner join account_classifications ac
+        on a.account_id = ac.account_id
+        and a.source_relation = ac.source_relation
+    where ac.account_sub_type = 'AccountsReceivable'
 ),
 
 ar_cutover_date_pre_matrix as (
-select
-    case
-        when i.first_inactive_date is not null
-        and i.last_active_date >= i.first_inactive_date
-        then i.first_inactive_date
-    end as cutover_date,
-    i.first_inactive_date,
-    i.last_active_date,
-    a.*
-from {{ ref('stg_quickbooks__account') }} a
-left join inactive_dates i
-    on a.account_id = i.account_id
-    and a.source_relation = i.source_relation
-where a.account_sub_type = 'AccountsReceivable'
+    select
+        a.account_id,
+        a.source_relation,
+        a.account_number,
+        a.name as account_name,
+        a.is_active,
+        a.is_sub_account,
+        a.parent_account_number,
+        a.parent_account_name,
+        i.first_inactive_date as cutover_date,
+        i.last_active_date
+    from ar_accounts a
+    left join {{ ref('int_quickbooks__ar_inactive_dates') }} i
+        on a.account_id = i.account_id
+        and a.source_relation = i.source_relation
+    where a.account_sub_type = 'AccountsReceivable'
 ),
 
 ar_cutover_date_matrix as (
-select * from ar_cutover_date_pre_matrix a
-where a.is_active and a.is_sub_account and a.cutover_date IS NOT NULL
-order by a.source_relation, a.account_number
+    select * 
+    from ar_cutover_date_pre_matrix a
+    where a.is_active 
+    and a.is_sub_account 
+    and a.cutover_date is not null
+    order by a.source_relation, a.account_number
 ),
 
 -- select * from ar_cutover_date_matrix
